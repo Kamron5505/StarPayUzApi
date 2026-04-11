@@ -14,6 +14,8 @@ const adminRoutes = require('./routes/admin');
 const botRoutes = require('./routes/bot');
 const clickRoutes = require('./routes/click');
 const smsRoutes = require('./routes/sms');
+const paymentRoutes = require('./routes/payment');
+const elderPayRoutes = require('./routes/elderpay');
 
 const app = express();
 
@@ -51,6 +53,8 @@ app.use('/api', apiRoutes);
 app.use('/api/bot', botRoutes);
 app.use('/api/click', clickRoutes);
 app.use('/api/sms', smsRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/elderpay', elderPayRoutes);
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
