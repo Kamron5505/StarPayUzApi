@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StarPay API</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0f;color:#e2e8f0;min-height:100vh}
+    header{display:flex;align-items:center;justify-content:space-between;padding:20px 40px;border-bottom:1px solid #1e1e2e;background:rgba(10,10,15,.95);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100}
+    .logo{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:700;background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .badge{background:#1e1e2e;border:1px solid #2d2d3e;padding:4px 12px;border-radius:20px;font-size:12px;color:#94a3b8}
+    .hero{text-align:center;padding:80px 20px 60px;position:relative;overflow:hidden}
+    .hero::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(245,158,11,.08) 0%,transparent 70%);pointer-events:none}
+    .hero h1{font-size:clamp(36px,6vw,64px);font-weight:800;line-height:1.1;margin-bottom:20px}
+    .hero h1 span{background:linear-gradient(135deg,#f59e0b,#fbbf24,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .hero p{font-size:18px;color:#94a3b8;max-width:500px;margin:0 auto 40px;line-height:1.6}
+    .hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+    .btn{padding:12px 28px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;border:none;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+    .btn-primary{background:linear-gradient(135deg,#f59e0b,#f97316);color:#000}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(245,158,11,.3)}
+    .btn-secondary{background:#1e1e2e;color:#e2e8f0;border:1px solid #2d2d3e}
+    .btn-secondary:hover{background:#2d2d3e}
+    .stats{display:flex;justify-content:center;gap:40px;padding:40px 20px;flex-wrap:wrap;border-bottom:1px solid #1e1e2e}
+    .stat{text-align:center}
+    .stat-value{font-size:32px;font-weight:800;background:linear-gradient(135deg,#f59e0b,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .stat-label{font-size:13px;color:#64748b;margin-top:4px}
+    .section{padding:60px 40px;max-width:1100px;margin:0 auto}
+    .section-title{font-size:28px;font-weight:700;margin-bottom:8px}
+    .section-sub{color:#64748b;margin-bottom:40px;font-size:15px}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+    .card{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:16px;padding:28px;transition:all .2s;position:relative;overflow:hidden}
+    .card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#f59e0b,#f97316);opacity:0;transition:opacity .2s}
+    .card:hover{border-color:#2d2d3e;transform:translateY(-3px)}
+    .card:hover::before{opacity:1}
+    .card-icon{font-size:36px;margin-bottom:16px}
+    .card h3{font-size:18px;font-weight:700;margin-bottom:8px}
+    .card p{color:#64748b;font-size:14px;line-height:1.6}
+    .card-badge{display:inline-block;margin-top:16px;padding:4px 10px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);border-radius:6px;font-size:12px;color:#f59e0b;font-family:monospace}
+    .pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px}
+    .price-card{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:12px;padding:20px;text-align:center;transition:all .2s}
+    .price-card:hover{border-color:#f59e0b;transform:translateY(-2px)}
+    .price-card.popular{border-color:#f59e0b;background:linear-gradient(135deg,rgba(245,158,11,.05),rgba(249,115,22,.05))}
+    .popular-badge{font-size:11px;color:#f59e0b;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+    .price-stars{font-size:26px;font-weight:800;color:#fbbf24}
+    .price-uzs{font-size:13px;color:#94a3b8;margin-top:6px}
+    .price-per{font-size:11px;color:#475569;margin-top:4px}
+    .endpoints{display:flex;flex-direction:column;gap:12px}
+    .endpoint{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:12px;padding:18px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+    .method{padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;min-width:52px;text-align:center;font-family:monospace}
+    .get{background:rgba(34,197,94,.15);color:#22c55e}
+    .post{background:rgba(59,130,246,.15);color:#3b82f6}
+    .endpoint-path{font-family:monospace;font-size:14px;color:#e2e8f0;flex:1}
+    .endpoint-desc{font-size:13px;color:#64748b}
+    pre{background:#070710;border:1px solid #1e1e2e;border-radius:10px;padding:20px;overflow-x:auto;font-size:13px;line-height:1.8;color:#e2e8f0}
+    .demo-box{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:16px;overflow:hidden}
+    .demo-tabs{display:flex;border-bottom:1px solid #1e1e2e}
+    .demo-tab{padding:12px 20px;font-size:13px;cursor:pointer;color:#64748b;border:none;background:none;transition:all .2s;font-family:inherit}
+    .demo-tab.active{color:#f59e0b;border-bottom:2px solid #f59e0b}
+    .demo-content{display:none;padding:24px}
+    .demo-content.active{display:block}
+    .hl-g{color:#22c55e}.hl-b{color:#60a5fa}.hl-y{color:#f59e0b}.hl-p{color:#a78bfa}.hl-c{color:#475569}
+    footer{text-align:center;padding:40px 20px;border-top:1px solid #1e1e2e;color:#475569;font-size:13px}
+    footer a{color:#f59e0b;text-decoration:none}
+    @media(max-width:600px){header{padding:16px 20px}.section{padding:40px 20px}.stats{gap:24px}}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⭐ StarPay API</div>
+  <span class="badge">v1.0.0</span>
+</header>
+
+<section class="hero">
+  <h1>Telegram <span>Stars</span><br/>Payment Gateway</h1>
+  <p>Автоматизированный сервис для продажи и отправки Telegram Stars. Быстро, надёжно, безопасно.</p>
+  <div class="hero-btns">
+    <a href="#docs" class="btn btn-primary">⚡ Документация</a>
+    <a href="#pricing" class="btn btn-secondary">💰 Цены</a>
+  </div>
+</section>
+
+<div class="stats">
+  <div class="stat"><div class="stat-value">50–5000</div><div class="stat-label">Звёзд за один запрос</div></div>
+  <div class="stat"><div class="stat-value">225 сум</div><div class="stat-label">За одну звезду</div></div>
+  <div class="stat"><div class="stat-value">~2 сек</div><div class="stat-label">Время доставки</div></div>
+  <div class="stat"><div class="stat-value">99.9%</div><div class="stat-label">Uptime</div></div>
+</div>
+
+<section class="section">
+  <div class="section-title">Возможности</div>
+  <div class="section-sub">Всё что нужно для продажи Telegram Stars</div>
+  <div class="cards">
+    <div class="card"><div class="card-icon">⭐</div><h3>Отправка Stars</h3><p>Мгновенная отправка звёзд на баланс Telegram пользователя через официальный API.</p><span class="card-badge">POST /api/send-stars</span></div>
+    <div class="card"><div class="card-icon">🎁</div><h3>Star Gifts</h3><p>Отправка подарков из звёзд. Пользователь получает уникальный подарок для конвертации.</p><span class="card-badge">POST /api/send-gift</span></div>
+    <div class="card"><div class="card-icon">💳</div><h3>Click оплата</h3><p>Автоматическое пополнение баланса через Click. Webhook обрабатывается мгновенно.</p><span class="card-badge">POST /api/click/complete</span></div>
+    <div class="card"><div class="card-icon">📊</div><h3>История</h3><p>Полная история всех операций с пагинацией и фильтрацией по типу транзакции.</p><span class="card-badge">GET /api/transactions</span></div>
+    <div class="card"><div class="card-icon">🔑</div><h3>API ключи</h3><p>Уникальный API ключ для каждого клиента. Ротация ключей через админ панель.</p><span class="card-badge">POST /api/admin/users</span></div>
+    <div class="card"><div class="card-icon">🛡️</div><h3>Безопасность</h3><p>Rate limiting, валидация входных данных, защита от несанкционированного доступа.</p><span class="card-badge">Middleware</span></div>
+  </div>
+</section>
+
+<section class="section" id="pricing">
+  <div class="section-title">Цены</div>
+  <div class="section-sub">1 звезда = 225 сум &nbsp;•&nbsp; Минимум 50 &nbsp;•&nbsp; Максимум 5 000</div>
+  <div class="pricing-grid">
+    <div class="price-card"><div class="price-stars">50 ⭐</div><div class="price-uzs">11 250 сум</div><div class="price-per">225 сум/шт</div></div>
+    <div class="price-card"><div class="price-stars">100 ⭐</div><div class="price-uzs">22 500 сум</div><div class="price-per">225 сум/шт</div></div>
+    <div class="price-card popular"><div class="popular-badge">★ Популярный</div><div class="price-stars">250 ⭐</div><div class="price-uzs">56 250 сум</div><div class="price-per">225 сум/шт</div></div>
+    <div class="price-card"><div class="price-stars">500 ⭐</div><div class="price-uzs">112 500 сум</div><div class="price-per">225 сум/шт</div></div>
+    <div class="price-card"><div class="price-stars">1000 ⭐</div><div class="price-uzs">225 000 сум</div><div class="price-per">225 сум/шт</div></div>
+    <div class="price-card"><div class="price-stars">2500 ⭐</div><div class="price-uzs">562 500 сум</div><div class="price-per">225 сум/шт</div></div>
+    <div class="price-card"><div class="price-stars">5000 ⭐</div><div class="price-uzs">1 125 000 сум</div><div class="price-per">225 сум/шт</div></div>
+  </div>
+</section>
+
+<section class="section" id="docs">
+  <div class="section-title">API Endpoints</div>
+  <div class="section-sub">Все запросы требуют заголовок <code style="color:#f59e0b;font-family:monospace">X-Api-Key: your_key</code></div>
+  <div class="endpoints">
+    <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/balance</span><span class="endpoint-desc">Текущий баланс пользователя</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/send-stars</span><span class="endpoint-desc">Отправить звёзды (50–5000)</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/send-gift</span><span class="endpoint-desc">Отправить подарок из звёзд</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/create-order</span><span class="endpoint-desc">Создать заказ</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/orders</span><span class="endpoint-desc">История заказов</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/transactions</span><span class="endpoint-desc">История транзакций</span></div>
+    <div class="endpoint"><span class="method get">GET</span><span class="endpoint-path">/api/bot/prices</span><span class="endpoint-desc">Прайс-лист звёзд</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/bot/buy-stars</span><span class="endpoint-desc">Купить звёзды (списывает сумы)</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/click/prepare</span><span class="endpoint-desc">Click webhook — шаг 1</span></div>
+    <div class="endpoint"><span class="method post">POST</span><span class="endpoint-path">/api/click/complete</span><span class="endpoint-desc">Click webhook — шаг 2</span></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-title">Примеры запросов</div>
+  <div class="section-sub">Готовые curl команды для тестирования</div>
+  <div class="demo-box">
+    <div class="demo-tabs">
+      <button class="demo-tab active" onclick="showTab('balance')">Баланс</button>
+      <button class="demo-tab" onclick="showTab('send')">Отправка</button>
+      <button class="demo-tab" onclick="showTab('gift')">Подарок</button>
+      <button class="demo-tab" onclick="showTab('history')">История</button>
+    </div>
+    <div id="tab-balance" class="demo-content active">
+<pre><span class="hl-c"># Получить баланс</span>
+<span class="hl-g">curl</span> <span class="hl-b">http://localhost:3000/api/balance</span> \
+  -H <span class="hl-y">"X-Api-Key: YOUR_API_KEY"</span>
+
+<span class="hl-c"># Ответ:</span>
+{
+  <span class="hl-p">"success"</span>: true,
+  <span class="hl-p">"data"</span>: {
+    <span class="hl-p">"username"</span>: <span class="hl-y">"testuser"</span>,
+    <span class="hl-p">"balance"</span>: <span class="hl-b">1000</span>,
+    <span class="hl-p">"api_key"</span>: <span class="hl-y">"31d269e8..."</span>
+  }
+}</pre>
+    </div>
+    <div id="tab-send" class="demo-content">
+<pre><span class="hl-c"># Отправить 50 звёзд</span>
+<span class="hl-g">curl</span> -X POST <span class="hl-b">http://localhost:3000/api/send-stars</span> \
+  -H <span class="hl-y">"Content-Type: application/json"</span> \
+  -H <span class="hl-y">"X-Api-Key: YOUR_API_KEY"</span> \
+  -d <span class="hl-y">'{"telegram_user_id": "123456789", "amount": 50}'</span>
+
+<span class="hl-c"># Ответ:</span>
+{
+  <span class="hl-p">"success"</span>: true,
+  <span class="hl-p">"message"</span>: <span class="hl-y">"Successfully sent 50 stars."</span>,
+  <span class="hl-p">"data"</span>: {
+    <span class="hl-p">"amount"</span>: <span class="hl-b">50</span>,
+    <span class="hl-p">"balance_remaining"</span>: <span class="hl-b">950</span>
+  }
+}</pre>
+    </div>
+    <div id="tab-gift" class="demo-content">
+<pre><span class="hl-c"># Отправить подарок</span>
+<span class="hl-g">curl</span> -X POST <span class="hl-b">http://localhost:3000/api/send-gift</span> \
+  -H <span class="hl-y">"Content-Type: application/json"</span> \
+  -H <span class="hl-y">"X-Api-Key: YOUR_API_KEY"</span> \
+  -d <span class="hl-y">'{"telegram_user_id": "123456789"}'</span>
+
+<span class="hl-c"># Ответ:</span>
+{
+  <span class="hl-p">"success"</span>: true,
+  <span class="hl-p">"message"</span>: <span class="hl-y">"Gift sent successfully."</span>,
+  <span class="hl-p">"data"</span>: {
+    <span class="hl-p">"gift_id"</span>: <span class="hl-y">"5170145012310081615"</span>,
+    <span class="hl-p">"stars"</span>: <span class="hl-b">15</span>
+  }
+}</pre>
+    </div>
+    <div id="tab-history" class="demo-content">
+<pre><span class="hl-c"># История транзакций</span>
+<span class="hl-g">curl</span> <span class="hl-b">"http://localhost:3000/api/transactions?page=1&limit=10"</span> \
+  -H <span class="hl-y">"X-Api-Key: YOUR_API_KEY"</span>
+
+<span class="hl-c"># Фильтр по типу</span>
+<span class="hl-g">curl</span> <span class="hl-b">"http://localhost:3000/api/transactions?type=debit"</span> \
+  -H <span class="hl-y">"X-Api-Key: YOUR_API_KEY"</span></pre>
+    </div>
+  </div>
+</section>
+
+<footer>
+  © 2026 StarPay API &nbsp;•&nbsp; Telegram Stars Gateway &nbsp;•&nbsp;
+  <a href="https://t.me/your_bot">@your_bot</a>
+</footer>
+
+<script>
+  function showTab(name) {
+    document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.demo-content').forEach(c => c.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "name": "telegram-stars-api",
+  "version": "1.0.0",
+  "description": "Telegram Stars selling & sending API service",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@ton/core": "^0.63.1",
+    "@ton/crypto": "^3.3.0",
+    "@ton/ton": "^16.2.3",
+    "axios": "^1.15.0",
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^8.3.2",
+    "express-validator": "^7.1.0",
+    "helmet": "^8.1.0",
+    "input": "^1.0.1",
+    "mongodb": "^7.1.1",
+    "mongoose": "^8.23.0",
+    "morgan": "^1.10.0",
+    "telegram": "^2.26.22",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.3"
+  }
+}
