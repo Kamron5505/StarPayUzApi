@@ -47,7 +47,6 @@ const createOrder = async (req, res) => {
     }), {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
-
     const data = response.data;
     console.log('[ElderPay] create response:', JSON.stringify(data));
 
@@ -96,7 +95,7 @@ const checkOrder = async (req, res) => {
   try {
     const { order_id } = req.params;
 
-    const response = await axios.get(`https://elderpay.bigsaver.ru/api`, {
+    const response = await axios.get(`${API_URL}`, {
       params: { method: 'check', order: order_id },
     });
 
