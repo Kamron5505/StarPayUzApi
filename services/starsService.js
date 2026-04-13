@@ -1,18 +1,17 @@
 const { TelegramClient, Api } = require('telegram');
 const { StringSession } = require('telegram/sessions');
+const { ConnectionTCPMTProxyAbridged } = require('telegram/network/connection/TCPMTProxy');
 
 const apiId = parseInt(process.env.TELEGRAM_API_ID);
 const apiHash = process.env.TELEGRAM_API_HASH;
 const sessionString = process.env.TELEGRAM_SESSION;
 
-let clientInstance = null;
-
 const getClient = async () => {
   const client = new TelegramClient(new StringSession(sessionString), apiId, apiHash, {
-    connectionRetries: 5,
-    useWSS: false,
-    autoReconnect: true,
-    retryDelay: 1000,
+    connectionRetries: 10,
+    useWSS: true,
+    timeout: 30,
+    requestRetries: 5,
   });
 
   await client.connect();
