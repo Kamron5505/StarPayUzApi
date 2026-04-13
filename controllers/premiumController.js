@@ -1,25 +1,23 @@
 const { body, validationResult } = require('express-validator');
-const User = require('../models/User');
 const Order = require('../models/Order');
 const Transaction = require('../models/Transaction');
-const { sendStars, getUserInfo, getStarsPricing } = require('../services/starsService');
+const { getPremiumPricing, sendPremium } = require('../services/premiumService');
 
-// Validation rules
-const sendStarsValidation = [
+const PREMIUM_PRICES_USD = { 3: 14.99, 6: 19.99, 12: 35.99 };
+
+// Validation
+const sendPremiumValidation = [
   body('username').notEmpty().withMessage('username is required').isString(),
-  body('amount')
-    .notEmpty().withMessage('amount is required')
-    .isInt({ min: 50, max: 100000 }).withMessage('amount must be between 50 and 100000'),
+  body('duration').isIn([3, 6, 12]).withMessage('duration must be 3, 6, or 12'),
 ];
 
 /**
- * POST /api/stars/pricing
- * Returns Stars price for a given amount
+ * POST /api/premium/pricing
+ * Returns current Telegram Premium pricing
  */
-const getStarsPricingHandler = async (req, res, next) => {
+const getPremiumPricingHandler = async (req, res, next) => {
   try {
-    const amount = parseInt(req.body.amount) || 50;
-    const result = await getStarsPricing(amount);
+    const result = await getPremiumPricing();
     if (!result.success) {
       return res.status(502).json({ success: false, error: result.error });
     }
@@ -30,40 +28,25 @@ const getStarsPricingHandler = async (req, res, next) => {
 };
 
 /**
- * POST /api/stars/user-info
- * Returns Telegram user info by username
+ * POST /api/premium/send
+ * Deducts balance and sends Telegram Premium to a user by username
  */
-const getUserInfoHandler = async (req, res, next) => {
-  try {
-    const { username } = req.body;
-    if (!username) return res.status(422).json({ success: false, error: 'username is required' });
-    const result = await getUserInfo(username);
-    if (!result.success) return res.status(502).json({ success: false, error: result.error });
-    return res.json({ success: true, data: result.result });
-  } catch (err) {
-    next(err);
-  }
-};
-
-/**
- * POST /api/stars/send
- * Deducts balance and sends stars to a Telegram user by username.
- */
-const sendStarsHandler = async (req, res, next) => {
+const sendPremiumHandler = async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(422).json({ success: false, errors: errors.array() });
     }
 
-    const { username, amount } = req.body;
+    const { username, duration } = req.body;
     const user = req.user;
+    const cost = PREMIUM_PRICES_USD[duration];
 
-    if (user.balance < amount) {
+    if (user.balance < cost) {
       return res.status(402).json({
         success: false,
         error: 'Insufficient balance.',
-        data: { balance: user.balance, required: amount },
+        data: { balance: user.balance, required: cost },
       });
     }
 
@@ -71,29 +54,30 @@ const sendStarsHandler = async (req, res, next) => {
     const order = await Order.create({
       user: user._id,
       telegram_user_id: username,
-      amount,
+      amount: cost,
       status: 'pending',
+      type: 'premium',
     });
 
     // Deduct balance
     const balanceBefore = user.balance;
-    user.balance -= amount;
+    user.balance -= cost;
     await user.save();
 
     const transaction = await Transaction.create({
       user: user._id,
       type: 'debit',
-      amount,
+      amount: cost,
       balance_before: balanceBefore,
       balance_after: user.balance,
-      description: `Sent ${amount} stars to @${username}`,
+      description: `Sent ${duration}mo Telegram Premium to @${username}`,
       order: order._id,
     });
 
     order.status = 'processing';
     await order.save();
 
-    const result = await sendStars(username, amount);
+    const result = await sendPremium(username, duration);
 
     if (result.success) {
       order.status = 'success';
@@ -102,19 +86,20 @@ const sendStarsHandler = async (req, res, next) => {
 
       return res.json({
         success: true,
-        message: `Successfully sent ${amount} stars to @${username}.`,
+        message: `Successfully sent ${duration}-month Telegram Premium to @${username}.`,
         data: {
           order_id: order._id,
           external_id: result.external_id,
           username,
-          amount,
+          duration,
+          cost,
           balance_remaining: user.balance,
           transaction_id: transaction._id,
         },
       });
     } else {
       // Rollback
-      user.balance += amount;
+      user.balance += cost;
       await user.save();
 
       order.status = 'failed';
@@ -124,16 +109,16 @@ const sendStarsHandler = async (req, res, next) => {
       await Transaction.create({
         user: user._id,
         type: 'credit',
-        amount,
-        balance_before: user.balance - amount,
+        amount: cost,
+        balance_before: user.balance - cost,
         balance_after: user.balance,
-        description: `Refund: failed to send ${amount} stars to @${username}`,
+        description: `Refund: failed to send ${duration}mo Premium to @${username}`,
         order: order._id,
       });
 
       return res.status(502).json({
         success: false,
-        error: 'Failed to send stars. Balance has been refunded.',
+        error: 'Failed to send Premium. Balance has been refunded.',
         data: { order_id: order._id, reason: result.error },
       });
     }
@@ -142,9 +127,4 @@ const sendStarsHandler = async (req, res, next) => {
   }
 };
 
-module.exports = {
-  sendStarsHandler,
-  sendStarsValidation,
-  getStarsPricingHandler,
-  getUserInfoHandler,
-};
+module.exports = { getPremiumPricingHandler, sendPremiumHandler, sendPremiumValidation };

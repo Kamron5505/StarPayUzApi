@@ -10,29 +10,26 @@ const apiId = parseInt(process.env.TELEGRAM_API_ID);
 const apiHash = process.env.TELEGRAM_API_HASH;
 const sessionString = process.env.TELEGRAM_SESSION;
 const SERVICE_SECRET = process.env.SERVICE_SECRET || 'secret';
+const PORT = process.env.PORT || 8080;
 
-let client = null;
+const newClient = () => new TelegramClient(new StringSession(sessionString), apiId, apiHash, {
+  connectionRetries: 3,
+  autoReconnect: true,
+  retryDelay: 1000,
+});
 
-// Keep persistent connection
-const initClient = async () => {
-  client = new TelegramClient(new StringSession(sessionString), apiId, apiHash, {
-    connectionRetries: 999,
-    autoReconnect: true,
-    retryDelay: 2000,
-    useWSS: true,
-  });
-  await client.connect();
-  console.log('[TG] Connected');
+let client = newClient();
 
-  // Keep alive ping every 60s
-  setInterval(async () => {
-    try {
-      await client.invoke(new Api.Ping({ pingId: BigInt(Date.now()) }));
-    } catch {}
-  }, 60000);
+const connect = async () => {
+  try {
+    await client.connect();
+    console.log('[TG] Connected');
+  } catch (e) {
+    console.error('[TG] Connect error:', e.message);
+  }
 };
 
-// Auth middleware
+// Auth
 const auth = (req, res, next) => {
   if (req.headers['x-service-secret'] !== SERVICE_SECRET) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -40,7 +37,31 @@ const auth = (req, res, next) => {
   next();
 };
 
-// POST /send-stars
+// Invoke with auto-retry on disconnect
+const invoke = async (method, retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      if (!client.connected) {
+        console.log('[TG] Not connected, reconnecting...');
+        client = newClient();
+        await client.connect();
+      }
+      return await client.invoke(method);
+    } catch (e) {
+      console.error(`[TG] Invoke error (attempt ${i+1}):`, e.message);
+      if (i < retries - 1) {
+        client = newClient();
+        await client.connect();
+        await new Promise(r => setTimeout(r, 1000));
+      } else {
+        throw e;
+      }
+    }
+  }
+};
+
+app.get('/', (req, res) => res.json({ status: 'ok', connected: client?.connected || false }));
+
 app.post('/send-stars', auth, async (req, res) => {
   const { telegram_user_id, amount } = req.body;
   if (!telegram_user_id || !amount) {
@@ -48,20 +69,17 @@ app.post('/send-stars', auth, async (req, res) => {
   }
 
   try {
-    const users = await client.invoke(new Api.users.GetUsers({
+    const users = await invoke(new Api.users.GetUsers({
       id: [new Api.InputUser({ userId: BigInt(telegram_user_id), accessHash: BigInt(0) })],
     }));
 
-    if (!users || !users[0]) throw new Error(`User ${telegram_user_id} not found`);
+    if (!users?.[0]) throw new Error(`User ${telegram_user_id} not found`);
     const user = users[0];
     const inputUser = new Api.InputUser({ userId: user.id, accessHash: user.accessHash });
 
-    const giftOptions = await client.invoke(new Api.payments.GetStarsGiftOptions({ userId: inputUser }));
+    const giftOptions = await invoke(new Api.payments.GetStarsGiftOptions({ userId: inputUser }));
     const option = giftOptions.find(o => parseInt(o.stars) === parseInt(amount));
-    if (!option) {
-      const available = giftOptions.map(o => o.stars.toString()).join(', ');
-      throw new Error(`No option for ${amount} stars. Available: ${available}`);
-    }
+    if (!option) throw new Error(`No option for ${amount} stars. Available: ${giftOptions.map(o => o.stars).join(', ')}`);
 
     const purpose = new Api.InputStorePaymentStarsGift({
       userId: inputUser,
@@ -70,11 +88,11 @@ app.post('/send-stars', auth, async (req, res) => {
       amount: option.amount,
     });
 
-    const form = await client.invoke(new Api.payments.GetPaymentForm({
+    const form = await invoke(new Api.payments.GetPaymentForm({
       invoice: new Api.InputInvoiceStars({ purpose }),
     }));
 
-    await client.invoke(new Api.payments.SendStarsForm({
+    await invoke(new Api.payments.SendStarsForm({
       formId: form.formId,
       invoice: new Api.InputInvoiceStars({ purpose }),
     }));
@@ -88,13 +106,7 @@ app.post('/send-stars', auth, async (req, res) => {
   }
 });
 
-// Health check
-app.get('/', (req, res) => res.json({ status: 'ok' }));
-
-const PORT = process.env.PORT || 3001;
-initClient().then(() => {
-  app.listen(PORT, () => console.log(`[Server] Running on port ${PORT}`));
-}).catch(err => {
-  console.error('[TG] Init failed:', err.message);
-  process.exit(1);
+app.listen(PORT, () => {
+  console.log(`[Server] Running on port ${PORT}`);
+  connect();
 });

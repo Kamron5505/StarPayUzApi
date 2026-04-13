@@ -1,39 +1,73 @@
 const axios = require('axios');
 
-const TG_SERVICE_URL = process.env.TG_SERVICE_URL || 'http://localhost:3001';
-const SERVICE_SECRET = process.env.SERVICE_SECRET || 'secret';
+const FRAGMENT_API_BASE = 'https://fragment-api.uz/api/v1';
+const FRAGMENT_API_KEY = process.env.FRAGMENT_API_KEY;
+
+const fragmentClient = axios.create({
+  baseURL: FRAGMENT_API_BASE,
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Key': FRAGMENT_API_KEY,
+  },
+  timeout: 120000,
+});
 
 /**
- * Send Stars to user via tg-service
+ * Get Telegram user info by username
  */
-const sendStars = async (telegramUserId, amount) => {
+const getUserInfo = async (username) => {
   try {
-    console.log(`[StarsService] Sending ${amount} stars to ${telegramUserId}`);
-
-    const response = await axios.post(`${TG_SERVICE_URL}/send-stars`, {
-      telegram_user_id: String(telegramUserId),
-      amount: parseInt(amount),
-    }, {
-      headers: { 'X-Service-Secret': SERVICE_SECRET },
-      timeout: 120000, // 2 minutes
-    });
-
-    const data = response.data;
-    if (data.success) {
-      console.log(`[StarsService] Success: ${amount} stars sent to ${telegramUserId}`);
-      return { success: true, external_id: data.external_id, error: null };
-    } else {
-      throw new Error(data.error || 'Unknown error');
-    }
+    const { data } = await fragmentClient.post('/getInfo', { username });
+    if (data.ok) return { success: true, result: data.result };
+    return { success: false, error: data.message };
   } catch (err) {
-    console.error(`[StarsService] Error:`, err.message);
-    return { success: false, external_id: null, error: err.message };
+    return { success: false, error: err.response?.data?.message || err.message };
   }
 };
 
-const sendStarGift = async (telegramUserId, giftId = null) => {
-  // TODO: add gift endpoint to tg-service
-  return { success: false, external_id: null, error: 'Gift sending not implemented in tg-service yet' };
+/**
+ * Get Stars pricing for a given amount
+ */
+const getStarsPricing = async (amount) => {
+  try {
+    const { data } = await fragmentClient.post('/stars/pricing', { amount });
+    if (data.ok) return { success: true, result: data.result };
+    return { success: false, error: data.message };
+  } catch (err) {
+    return { success: false, error: err.response?.data?.message || err.message };
+  }
 };
 
-module.exports = { sendStars, sendStarGift };
+/**
+ * Send Stars to a Telegram user by username
+ */
+const sendStars = async (username, amount) => {
+  try {
+    console.log(`[StarsService] Sending ${amount} stars to @${username}`);
+    const { data } = await fragmentClient.post('/stars/buy', { username, amount });
+    if (data.ok) {
+      console.log(`[StarsService] Success: ${amount} stars sent to @${username}`);
+      return { success: true, external_id: data.result.message_hash, result: data.result };
+    }
+    return { success: false, external_id: null, error: data.message };
+  } catch (err) {
+    const errMsg = err.response?.data?.message || err.message;
+    console.error(`[StarsService] Error:`, errMsg);
+    return { success: false, external_id: null, error: errMsg };
+  }
+};
+
+/**
+ * Get wallet balance
+ */
+const getWalletBalance = async () => {
+  try {
+    const { data } = await fragmentClient.post('/wallet/balance', {});
+    if (data.ok) return { success: true, result: data.result };
+    return { success: false, error: data.message };
+  } catch (err) {
+    return { success: false, error: err.response?.data?.message || err.message };
+  }
+};
+
+module.exports = { sendStars, getUserInfo, getStarsPricing, getWalletBalance };
