@@ -1,224 +1,548 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>StarPay Admin</title>
   <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0a0f;color:#e2e8f0;min-height:100vh}
-    .login{display:flex;align-items:center;justify-content:center;min-height:100vh}
-    .login-box{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:16px;padding:40px;width:360px}
-    .login-box h2{font-size:22px;margin-bottom:24px;text-align:center}
-    input{width:100%;padding:12px 16px;background:#070710;border:1px solid #1e1e2e;border-radius:8px;color:#e2e8f0;font-size:14px;margin-bottom:12px;outline:none}
-    input:focus{border-color:#f59e0b}
-    .btn{width:100%;padding:12px;background:linear-gradient(135deg,#f59e0b,#f97316);border:none;border-radius:8px;color:#000;font-weight:700;font-size:15px;cursor:pointer}
-    .btn:hover{opacity:.9}
-    .err{color:#ef4444;font-size:13px;margin-top:8px;text-align:center}
-    header{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid #1e1e2e;background:#0f0f1a}
-    .logo{font-size:18px;font-weight:700;color:#f59e0b}
-    .logout{background:none;border:1px solid #2d2d3e;color:#94a3b8;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px}
-    .layout{display:flex;min-height:calc(100vh - 57px)}
-    nav{width:220px;background:#0f0f1a;border-right:1px solid #1e1e2e;padding:20px 0;flex-shrink:0}
-    .nav-item{display:flex;align-items:center;gap:10px;padding:12px 20px;cursor:pointer;font-size:14px;color:#94a3b8;transition:all .2s}
-    .nav-item:hover,.nav-item.active{background:#1e1e2e;color:#f59e0b}
-    .nav-item span{font-size:18px}
-    main{flex:1;padding:32px;overflow-y:auto}
-    .page{display:none}
-    .page.active{display:block}
-    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
-    .stat-card{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:12px;padding:20px}
-    .stat-card .val{font-size:28px;font-weight:800;color:#f59e0b}
-    .stat-card .lbl{font-size:13px;color:#64748b;margin-top:4px}
-    .section-title{font-size:20px;font-weight:700;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse;font-size:13px}
-    th{text-align:left;padding:10px 12px;border-bottom:1px solid #1e1e2e;color:#64748b;font-weight:600}
-    td{padding:10px 12px;border-bottom:1px solid #0f0f1a}
-    tr:hover td{background:#0f0f1a}
-    .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
-    .badge-success{background:rgba(34,197,94,.15);color:#22c55e}
-    .badge-pending{background:rgba(245,158,11,.15);color:#f59e0b}
-    .badge-failed{background:rgba(239,68,68,.15);color:#ef4444}
-    .search-bar{display:flex;gap:12px;margin-bottom:20px}
-    .search-bar input{flex:1;margin:0}
-    .search-bar .btn{width:auto;padding:12px 20px}
-    .user-detail{background:#0f0f1a;border:1px solid #1e1e2e;border-radius:12px;padding:24px;margin-bottom:20px}
-    .user-detail h3{font-size:16px;margin-bottom:16px;color:#f59e0b}
-    .detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1e1e2e;font-size:14px}
-    .detail-row:last-child{border:none}
-    .detail-label{color:#64748b}
-    .topup-form{display:flex;gap:12px;margin-top:16px}
-    .topup-form input{flex:1;margin:0}
-    .topup-form .btn{width:auto;padding:12px 20px;background:linear-gradient(135deg,#22c55e,#16a34a)}
-    .hidden{display:none}
-    .back-btn{background:none;border:1px solid #2d2d3e;color:#94a3b8;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;margin-bottom:20px}
-    .back-btn:hover{background:#1e1e2e}
-    .pagination{display:flex;gap:8px;margin-top:16px;justify-content:center}
-    .page-btn{padding:6px 12px;background:#1e1e2e;border:none;color:#e2e8f0;border-radius:6px;cursor:pointer;font-size:13px}
-    .page-btn.active{background:#f59e0b;color:#000}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0a0f;
+      color: #e2e8f0;
+      min-height: 100vh
+    }
+
+    .login {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh
+    }
+
+    .login-box {
+      background: #0f0f1a;
+      border: 1px solid #1e1e2e;
+      border-radius: 16px;
+      padding: 40px;
+      width: 360px
+    }
+
+    .login-box h2 {
+      font-size: 22px;
+      margin-bottom: 24px;
+      text-align: center
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      background: #070710;
+      border: 1px solid #1e1e2e;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 14px;
+      margin-bottom: 12px;
+      outline: none
+    }
+
+    input:focus {
+      border-color: #f59e0b
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #f59e0b, #f97316);
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer
+    }
+
+    .btn:hover {
+      opacity: .9
+    }
+
+    .err {
+      color: #ef4444;
+      font-size: 13px;
+      margin-top: 8px;
+      text-align: center
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      border-bottom: 1px solid #1e1e2e;
+      background: #0f0f1a
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #f59e0b
+    }
+
+    .logout {
+      background: none;
+      border: 1px solid #2d2d3e;
+      color: #94a3b8;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px
+    }
+
+    .layout {
+      display: flex;
+      min-height: calc(100vh - 57px)
+    }
+
+    nav {
+      width: 220px;
+      background: #0f0f1a;
+      border-right: 1px solid #1e1e2e;
+      padding: 20px 0;
+      flex-shrink: 0
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #94a3b8;
+      transition: all .2s
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: #1e1e2e;
+      color: #f59e0b
+    }
+
+    .nav-item span {
+      font-size: 18px
+    }
+
+    main {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto
+    }
+
+    .page {
+      display: none
+    }
+
+    .page.active {
+      display: block
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px
+    }
+
+    .stat-card {
+      background: #0f0f1a;
+      border: 1px solid #1e1e2e;
+      border-radius: 12px;
+      padding: 20px
+    }
+
+    .stat-card .val {
+      font-size: 28px;
+      font-weight: 800;
+      color: #f59e0b
+    }
+
+    .stat-card .lbl {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 16px
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid #1e1e2e;
+      color: #64748b;
+      font-weight: 600
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #0f0f1a
+    }
+
+    tr:hover td {
+      background: #0f0f1a
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600
+    }
+
+    .badge-success {
+      background: rgba(34, 197, 94, .15);
+      color: #22c55e
+    }
+
+    .badge-pending {
+      background: rgba(245, 158, 11, .15);
+      color: #f59e0b
+    }
+
+    .badge-failed {
+      background: rgba(239, 68, 68, .15);
+      color: #ef4444
+    }
+
+    .search-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px
+    }
+
+    .search-bar input {
+      flex: 1;
+      margin: 0
+    }
+
+    .search-bar .btn {
+      width: auto;
+      padding: 12px 20px
+    }
+
+    .user-detail {
+      background: #0f0f1a;
+      border: 1px solid #1e1e2e;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px
+    }
+
+    .user-detail h3 {
+      font-size: 16px;
+      margin-bottom: 16px;
+      color: #f59e0b
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #1e1e2e;
+      font-size: 14px
+    }
+
+    .detail-row:last-child {
+      border: none
+    }
+
+    .detail-label {
+      color: #64748b
+    }
+
+    .topup-form {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px
+    }
+
+    .topup-form input {
+      flex: 1;
+      margin: 0
+    }
+
+    .topup-form .btn {
+      width: auto;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #22c55e, #16a34a)
+    }
+
+    .hidden {
+      display: none
+    }
+
+    .back-btn {
+      background: none;
+      border: 1px solid #2d2d3e;
+      color: #94a3b8;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-bottom: 20px
+    }
+
+    .back-btn:hover {
+      background: #1e1e2e
+    }
+
+    .pagination {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      justify-content: center
+    }
+
+    .page-btn {
+      padding: 6px 12px;
+      background: #1e1e2e;
+      border: none;
+      color: #e2e8f0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px
+    }
+
+    .page-btn.active {
+      background: #f59e0b;
+      color: #000
+    }
   </style>
 </head>
+
 <body>
 
-<!-- Login -->
-<div class="login" id="loginPage">
-  <div class="login-box">
-    <h2>⭐ StarPay Admin</h2>
-    <input type="password" id="adminSecret" placeholder="Admin Secret Key" onkeydown="if(event.key==='Enter')login()"/>
-    <button class="btn" onclick="login()">Kirish</button>
-    <div class="err hidden" id="loginErr">Noto'g'ri kalit!</div>
+  <!-- Login -->
+  <div class="login" id="loginPage">
+    <div class="login-box">
+      <h2>⭐ StarPay Admin</h2>
+      <input type="password" id="adminSecret" placeholder="Admin Secret Key"
+        onkeydown="if(event.key==='Enter')login()" />
+      <button class="btn" onclick="login()">Kirish</button>
+      <div class="err hidden" id="loginErr">Noto'g'ri kalit!</div>
+    </div>
   </div>
-</div>
 
-<!-- Dashboard -->
-<div id="dashboard" class="hidden">
-  <header>
-    <div class="logo">⭐ StarPay Admin</div>
-    <button class="logout" onclick="logout()">Chiqish</button>
-  </header>
-  <div class="layout">
-    <nav>
-      <div class="nav-item active" onclick="showPage('overview')" id="nav-overview"><span>📊</span> Statistika</div>
-      <div class="nav-item" onclick="showPage('users')" id="nav-users"><span>👥</span> Foydalanuvchilar</div>
-      <div class="nav-item" onclick="showPage('orders')" id="nav-orders"><span>📦</span> Buyurtmalar</div>
-      <div class="nav-item" onclick="showPage('transactions')" id="nav-transactions"><span>💳</span> Tranzaksiyalar</div>
-      <div class="nav-item" onclick="showPage('topup')" id="nav-topup"><span>💰</span> Balans to'ldirish</div>
-    </nav>
-    <main>
-
-      <!-- Overview -->
-      <div class="page active" id="page-overview">
-        <div class="stats-grid" id="statsGrid"></div>
-        <div class="section-title">So'nggi buyurtmalar</div>
-        <table><thead><tr><th>ID</th><th>Foydalanuvchi</th><th>Xizmat</th><th>Miqdor</th><th>Status</th><th>Sana</th></tr></thead>
-        <tbody id="recentOrders"></tbody></table>
-      </div>
-
-      <!-- Users -->
-      <div class="page" id="page-users">
-        <div class="search-bar">
-          <input type="text" id="userSearch" placeholder="Username yoki Telegram ID qidirish..."/>
-          <button class="btn" onclick="searchUsers()">Qidirish</button>
+  <!-- Dashboard -->
+  <div id="dashboard" class="hidden">
+    <header>
+      <div class="logo">⭐ StarPay Admin</div>
+      <button class="logout" onclick="logout()">Chiqish</button>
+    </header>
+    <div class="layout">
+      <nav>
+        <div class="nav-item active" onclick="showPage('overview')" id="nav-overview"><span>📊</span> Statistika</div>
+        <div class="nav-item" onclick="showPage('users')" id="nav-users"><span>👥</span> Foydalanuvchilar</div>
+        <div class="nav-item" onclick="showPage('orders')" id="nav-orders"><span>📦</span> Buyurtmalar</div>
+        <div class="nav-item" onclick="showPage('transactions')" id="nav-transactions"><span>💳</span> Tranzaksiyalar
         </div>
-        <div id="userDetail" class="hidden"></div>
-        <table><thead><tr><th>Telegram ID</th><th>Username</th><th>Balans (UZS)</th><th>Jami xarid</th><th>Ro'yxatdan o'tgan</th><th></th></tr></thead>
-        <tbody id="usersTable"></tbody></table>
-        <div class="pagination" id="usersPagination"></div>
-      </div>
+        <div class="nav-item" onclick="showPage('topup')" id="nav-topup"><span>💰</span> Balans to'ldirish</div>
+      </nav>
+      <main>
 
-      <!-- Orders -->
-      <div class="page" id="page-orders">
-        <div class="search-bar">
-          <select id="orderStatus" style="padding:12px;background:#070710;border:1px solid #1e1e2e;border-radius:8px;color:#e2e8f0;font-size:14px">
-            <option value="">Barcha statuslar</option>
-            <option value="pending">Pending</option>
-            <option value="success">Success</option>
-            <option value="failed">Failed</option>
-          </select>
-          <button class="btn" onclick="loadOrders()">Filtrlash</button>
+        <!-- Overview -->
+        <div class="page active" id="page-overview">
+          <div class="stats-grid" id="statsGrid"></div>
+          <div class="section-title">So'nggi buyurtmalar</div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Foydalanuvchi</th>
+                <th>Xizmat</th>
+                <th>Miqdor</th>
+                <th>Status</th>
+                <th>Sana</th>
+              </tr>
+            </thead>
+            <tbody id="recentOrders"></tbody>
+          </table>
         </div>
-        <table><thead><tr><th>ID</th><th>Telegram ID</th><th>Stars</th><th>Status</th><th>Sana</th></tr></thead>
-        <tbody id="ordersTable"></tbody></table>
-        <div class="pagination" id="ordersPagination"></div>
-      </div>
 
-      <!-- Transactions -->
-      <div class="page" id="page-transactions">
-        <table><thead><tr><th>Tur</th><th>Miqdor</th><th>Oldin</th><th>Keyin</th><th>Tavsif</th><th>Sana</th></tr></thead>
-        <tbody id="transactionsTable"></tbody></table>
-        <div class="pagination" id="txPagination"></div>
-      </div>
-
-      <!-- Topup -->
-      <div class="page" id="page-topup">
-        <div class="section-title">Foydalanuvchi balansini to'ldirish</div>
-        <div class="user-detail">
-          <div style="display:flex;gap:12px;margin-bottom:16px">
-            <input type="text" id="topupUsername" placeholder="Username" style="margin:0"/>
-            <input type="number" id="topupAmount" placeholder="Miqdor (UZS)" style="margin:0"/>
-            <button class="btn" style="width:auto;padding:12px 20px" onclick="topupBalance()">To'ldirish</button>
+        <!-- Users -->
+        <div class="page" id="page-users">
+          <div class="search-bar">
+            <input type="text" id="userSearch" placeholder="Username yoki Telegram ID qidirish..." />
+            <button class="btn" onclick="searchUsers()">Qidirish</button>
           </div>
-          <div id="topupResult"></div>
+          <div id="userDetail" class="hidden"></div>
+          <table>
+            <thead>
+              <tr>
+                <th>Telegram ID</th>
+                <th>Username</th>
+                <th>Balans (UZS)</th>
+                <th>Jami xarid</th>
+                <th>Ro'yxatdan o'tgan</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="usersTable"></tbody>
+          </table>
+          <div class="pagination" id="usersPagination"></div>
         </div>
-        <div class="section-title">Yangi API kalit yaratish</div>
-        <div class="user-detail">
-          <div style="display:flex;gap:12px">
-            <input type="text" id="newUsername" placeholder="Username" style="margin:0"/>
-            <input type="number" id="newBalance" placeholder="Boshlang'ich balans" style="margin:0"/>
-            <button class="btn" style="width:auto;padding:12px 20px" onclick="createUser()">Yaratish</button>
-          </div>
-          <div id="createResult" style="margin-top:12px;font-size:13px;color:#22c55e"></div>
-        </div>
-      </div>
 
-    </main>
+        <!-- Orders -->
+        <div class="page" id="page-orders">
+          <div class="search-bar">
+            <select id="orderStatus"
+              style="padding:12px;background:#070710;border:1px solid #1e1e2e;border-radius:8px;color:#e2e8f0;font-size:14px">
+              <option value="">Barcha statuslar</option>
+              <option value="pending">Pending</option>
+              <option value="success">Success</option>
+              <option value="failed">Failed</option>
+            </select>
+            <button class="btn" onclick="loadOrders()">Filtrlash</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Telegram ID</th>
+                <th>Stars</th>
+                <th>Status</th>
+                <th>Sana</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTable"></tbody>
+          </table>
+          <div class="pagination" id="ordersPagination"></div>
+        </div>
+
+        <!-- Transactions -->
+        <div class="page" id="page-transactions">
+          <table>
+            <thead>
+              <tr>
+                <th>Tur</th>
+                <th>Miqdor</th>
+                <th>Oldin</th>
+                <th>Keyin</th>
+                <th>Tavsif</th>
+                <th>Sana</th>
+              </tr>
+            </thead>
+            <tbody id="transactionsTable"></tbody>
+          </table>
+          <div class="pagination" id="txPagination"></div>
+        </div>
+
+        <!-- Topup -->
+        <div class="page" id="page-topup">
+          <div class="section-title">Foydalanuvchi balansini to'ldirish</div>
+          <div class="user-detail">
+            <div style="display:flex;gap:12px;margin-bottom:16px">
+              <input type="text" id="topupUsername" placeholder="Username yoki Telegram ID" style="margin:0" />
+              <input type="number" id="topupAmount" placeholder="Miqdor (UZS)" style="margin:0" />
+              <button class="btn" style="width:auto;padding:12px 20px" onclick="topupBalance()">To'ldirish</button>
+            </div>
+            <div id="topupResult"></div>
+          </div>
+          <div class="section-title">Yangi API kalit yaratish</div>
+          <div class="user-detail">
+            <div style="display:flex;gap:12px">
+              <input type="text" id="newUsername" placeholder="Username" style="margin:0" />
+              <input type="number" id="newBalance" placeholder="Boshlang'ich balans" style="margin:0" />
+              <button class="btn" style="width:auto;padding:12px 20px" onclick="createUser()">Yaratish</button>
+            </div>
+            <div id="createResult" style="margin-top:12px;font-size:13px;color:#22c55e"></div>
+          </div>
+        </div>
+
+      </main>
+    </div>
   </div>
-</div>
 
-<script>
-const API = '';
-let SECRET = '';
-let usersPage = 1, ordersPage = 1, txPage = 1;
+  <script>
+    const API = '';
+    let SECRET = '';
+    let usersPage = 1, ordersPage = 1, txPage = 1;
 
-function login() {
-  const key = document.getElementById('adminSecret').value.trim();
-  if (!key) return;
-  SECRET = key;
-  fetch(`${API}/api/admin/users?limit=1`, {
-    headers: { 'X-Admin-Secret': key }
-  }).then(r => {
-    if (r.ok) {
-      document.getElementById('loginPage').classList.add('hidden');
-      document.getElementById('dashboard').classList.remove('hidden');
-      loadOverview();
-    } else {
-      document.getElementById('loginErr').classList.remove('hidden');
+    function login() {
+      const key = document.getElementById('adminSecret').value.trim();
+      if (!key) return;
+      SECRET = key;
+      fetch(`${API}/api/admin/users?limit=1`, {
+        headers: { 'X-Admin-Secret': key }
+      }).then(r => {
+        if (r.ok) {
+          document.getElementById('loginPage').classList.add('hidden');
+          document.getElementById('dashboard').classList.remove('hidden');
+          loadOverview();
+        } else {
+          document.getElementById('loginErr').classList.remove('hidden');
+        }
+      }).catch(() => document.getElementById('loginErr').classList.remove('hidden'));
     }
-  }).catch(() => document.getElementById('loginErr').classList.remove('hidden'));
-}
 
-function logout() {
-  SECRET = '';
-  document.getElementById('loginPage').classList.remove('hidden');
-  document.getElementById('dashboard').classList.add('hidden');
-}
+    function logout() {
+      SECRET = '';
+      document.getElementById('loginPage').classList.remove('hidden');
+      document.getElementById('dashboard').classList.add('hidden');
+    }
 
-function showPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  document.getElementById('nav-' + name).classList.add('active');
-  if (name === 'overview') loadOverview();
-  if (name === 'users') loadUsers();
-  if (name === 'orders') loadOrders();
-  if (name === 'transactions') loadTransactions();
-}
+    function showPage(name) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      document.getElementById('nav-' + name).classList.add('active');
+      if (name === 'overview') loadOverview();
+      if (name === 'users') loadUsers();
+      if (name === 'orders') loadOrders();
+      if (name === 'transactions') loadTransactions();
+    }
 
-async function api(path) {
-  const r = await fetch(API + path, { headers: { 'X-Admin-Secret': SECRET, 'X-Api-Key': '' } });
-  return r.json();
-}
+    async function api(path) {
+      const r = await fetch(API + path, { headers: { 'X-Admin-Secret': SECRET, 'X-Api-Key': '' } });
+      return r.json();
+    }
 
-async function apiPost(path, body) {
-  const r = await fetch(API + path, {
-    method: 'POST',
-    headers: { 'X-Admin-Secret': SECRET, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  return r.json();
-}
+    async function apiPost(path, body) {
+      const r = await fetch(API + path, {
+        method: 'POST',
+        headers: { 'X-Admin-Secret': SECRET, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      return r.json();
+    }
 
-async function loadOverview() {
-  const users = await api('/api/admin/users?limit=1');
-  const orders = await api('/api/orders?limit=5');
-  const total = users.data?.pagination?.total || 0;
+    async function loadOverview() {
+      const users = await api('/api/admin/users?limit=1');
+      const orders = await api('/api/orders?limit=5');
+      const total = users.data?.pagination?.total || 0;
 
-  document.getElementById('statsGrid').innerHTML = `
+      document.getElementById('statsGrid').innerHTML = `
     <div class="stat-card"><div class="val">${total}</div><div class="lbl">Jami foydalanuvchilar</div></div>
     <div class="stat-card"><div class="val">${orders.data?.pagination?.total || 0}</div><div class="lbl">Jami buyurtmalar</div></div>
   `;
 
-  const rows = (orders.data?.orders || []).map(o => `
+      const rows = (orders.data?.orders || []).map(o => `
     <tr>
       <td><code>${o._id?.slice(-6)}</code></td>
       <td><code>${o.telegram_user_id}</code></td>
@@ -227,16 +551,16 @@ async function loadOverview() {
       <td>${new Date(o.createdAt).toLocaleString('uz')}</td>
     </tr>
   `).join('');
-  document.getElementById('recentOrders').innerHTML = rows;
-}
+      document.getElementById('recentOrders').innerHTML = rows;
+    }
 
-async function loadUsers(page = 1) {
-  usersPage = page;
-  const data = await api(`/api/admin/users?page=${page}&limit=20`);
-  const users = data.data?.users || [];
-  const pagination = data.data?.pagination || {};
+    async function loadUsers(page = 1) {
+      usersPage = page;
+      const data = await api(`/api/admin/users?page=${page}&limit=20`);
+      const users = data.data?.users || [];
+      const pagination = data.data?.pagination || {};
 
-  document.getElementById('usersTable').innerHTML = users.map(u => `
+      document.getElementById('usersTable').innerHTML = users.map(u => `
     <tr>
       <td><code>${u.telegram_id || u._id}</code></td>
       <td>${u.username || '—'}</td>
@@ -247,17 +571,17 @@ async function loadUsers(page = 1) {
     </tr>
   `).join('');
 
-  renderPagination('usersPagination', pagination, p => loadUsers(p));
-}
+      renderPagination('usersPagination', pagination, p => loadUsers(p));
+    }
 
-async function searchUsers() {
-  const q = document.getElementById('userSearch').value.trim();
-  if (!q) return loadUsers();
-  const data = await api(`/api/admin/users?limit=50`);
-  const users = (data.data?.users || []).filter(u =>
-    u.username?.includes(q) || u.telegram_id?.includes(q) || u._id?.includes(q)
-  );
-  document.getElementById('usersTable').innerHTML = users.map(u => `
+    async function searchUsers() {
+      const q = document.getElementById('userSearch').value.trim();
+      if (!q) return loadUsers();
+      const data = await api(`/api/admin/users?limit=50`);
+      const users = (data.data?.users || []).filter(u =>
+        u.username?.includes(q) || u.telegram_id?.includes(q) || u._id?.includes(q)
+      );
+      document.getElementById('usersTable').innerHTML = users.map(u => `
     <tr>
       <td><code>${u.telegram_id || u._id}</code></td>
       <td>${u.username || '—'}</td>
@@ -267,13 +591,13 @@ async function searchUsers() {
       <td><button class="page-btn" onclick="showUserDetail('${u.telegram_id || u._id}')">Ko'rish</button></td>
     </tr>
   `).join('');
-}
+    }
 
-async function showUserDetail(id) {
-  const data = await api(`/api/bot/user/${id}/balance`);
-  const u = data.data || {};
-  document.getElementById('userDetail').classList.remove('hidden');
-  document.getElementById('userDetail').innerHTML = `
+    async function showUserDetail(id) {
+      const data = await api(`/api/bot/user/${id}/balance`);
+      const u = data.data || {};
+      document.getElementById('userDetail').classList.remove('hidden');
+      document.getElementById('userDetail').innerHTML = `
     <div class="user-detail">
       <button class="back-btn" onclick="document.getElementById('userDetail').classList.add('hidden')">◀ Orqaga</button>
       <h3>👤 Foydalanuvchi: ${id}</h3>
@@ -282,16 +606,16 @@ async function showUserDetail(id) {
       <div class="detail-row"><span class="detail-label">Jami sotib olgan</span>${u.total_stars_bought || 0} ⭐</div>
     </div>
   `;
-}
+    }
 
-async function loadOrders(page = 1) {
-  ordersPage = page;
-  const status = document.getElementById('orderStatus').value;
-  const url = `/api/orders?page=${page}&limit=20${status ? '&status=' + status : ''}`;
-  const data = await api(url);
-  const orders = data.data?.orders || [];
+    async function loadOrders(page = 1) {
+      ordersPage = page;
+      const status = document.getElementById('orderStatus').value;
+      const url = `/api/orders?page=${page}&limit=20${status ? '&status=' + status : ''}`;
+      const data = await api(url);
+      const orders = data.data?.orders || [];
 
-  document.getElementById('ordersTable').innerHTML = orders.map(o => `
+      document.getElementById('ordersTable').innerHTML = orders.map(o => `
     <tr>
       <td><code>${o._id?.slice(-8)}</code></td>
       <td><code>${o.telegram_user_id}</code></td>
@@ -301,15 +625,15 @@ async function loadOrders(page = 1) {
     </tr>
   `).join('');
 
-  renderPagination('ordersPagination', data.data?.pagination || {}, p => loadOrders(p));
-}
+      renderPagination('ordersPagination', data.data?.pagination || {}, p => loadOrders(p));
+    }
 
-async function loadTransactions(page = 1) {
-  txPage = page;
-  const data = await api(`/api/transactions?page=${page}&limit=20`);
-  const txs = data.data?.transactions || [];
+    async function loadTransactions(page = 1) {
+      txPage = page;
+      const data = await api(`/api/transactions?page=${page}&limit=20`);
+      const txs = data.data?.transactions || [];
 
-  document.getElementById('transactionsTable').innerHTML = txs.map(t => `
+      document.getElementById('transactionsTable').innerHTML = txs.map(t => `
     <tr>
       <td><span class="badge ${t.type === 'credit' ? 'badge-success' : 'badge-failed'}">${t.type}</span></td>
       <td><b>${t.amount.toLocaleString()}</b></td>
@@ -320,46 +644,52 @@ async function loadTransactions(page = 1) {
     </tr>
   `).join('');
 
-  renderPagination('txPagination', data.data?.pagination || {}, p => loadTransactions(p));
-}
+      renderPagination('txPagination', data.data?.pagination || {}, p => loadTransactions(p));
+    }
 
-async function topupBalance() {
-  const username = document.getElementById('topupUsername').value.trim();
-  const amount = parseInt(document.getElementById('topupAmount').value);
-  if (!username || !amount) return;
+    async function topupBalance() {
+      const username = document.getElementById('topupUsername').value.trim();
+      const amount = parseInt(document.getElementById('topupAmount').value);
+      if (!username || !amount) return;
 
-  const data = await apiPost('/api/admin/topup', { username, amount });
-  const el = document.getElementById('topupResult');
-  if (data.success) {
-    el.innerHTML = `<span style="color:#22c55e">✅ ${data.message}</span>`;
-  } else {
-    el.innerHTML = `<span style="color:#ef4444">❌ ${data.error}</span>`;
-  }
-}
+      // Detect if input is telegram_id (numeric) or username
+      const body = isNaN(username)
+        ? { username, amount }
+        : { telegram_id: username, amount };
 
-async function createUser() {
-  const username = document.getElementById('newUsername').value.trim();
-  const balance = parseInt(document.getElementById('newBalance').value) || 0;
-  if (!username) return;
+      const data = await apiPost('/api/admin/topup', body);
+      const el = document.getElementById('topupResult');
+      if (data.success) {
+        el.innerHTML = `<span style="color:#22c55e">✅ ${data.message}</span>`;
+      } else {
+        el.innerHTML = `<span style="color:#ef4444">❌ ${data.error}</span>`;
+      }
+    }
 
-  const data = await apiPost('/api/admin/users', { username, initial_balance: balance });
-  const el = document.getElementById('createResult');
-  if (data.success) {
-    el.innerHTML = `✅ Yaratildi! API Key: <code style="color:#f59e0b">${data.data.api_key}</code>`;
-  } else {
-    el.innerHTML = `<span style="color:#ef4444">❌ ${data.error}</span>`;
-  }
-}
+    async function createUser() {
+      const username = document.getElementById('newUsername').value.trim();
+      const balance = parseInt(document.getElementById('newBalance').value) || 0;
+      if (!username) return;
 
-function renderPagination(id, pagination, cb) {
-  const { page, pages } = pagination;
-  if (!pages || pages <= 1) { document.getElementById(id).innerHTML = ''; return; }
-  let html = '';
-  for (let i = 1; i <= Math.min(pages, 10); i++) {
-    html += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="(${cb})(${i})">${i}</button>`;
-  }
-  document.getElementById(id).innerHTML = html;
-}
-</script>
+      const data = await apiPost('/api/admin/users', { username, initial_balance: balance });
+      const el = document.getElementById('createResult');
+      if (data.success) {
+        el.innerHTML = `✅ Yaratildi! API Key: <code style="color:#f59e0b">${data.data.api_key}</code>`;
+      } else {
+        el.innerHTML = `<span style="color:#ef4444">❌ ${data.error}</span>`;
+      }
+    }
+
+    function renderPagination(id, pagination, cb) {
+      const { page, pages } = pagination;
+      if (!pages || pages <= 1) { document.getElementById(id).innerHTML = ''; return; }
+      let html = '';
+      for (let i = 1; i <= Math.min(pages, 10); i++) {
+        html += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="(${cb})(${i})">${i}</button>`;
+      }
+      document.getElementById(id).innerHTML = html;
+    }
+  </script>
 </body>
+
 </html>

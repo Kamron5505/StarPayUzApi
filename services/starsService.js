@@ -8,15 +8,14 @@ const sessionString = process.env.TELEGRAM_SESSION;
 let clientInstance = null;
 
 const getClient = async () => {
-  if (clientInstance && clientInstance.connected) return clientInstance;
-
   const client = new TelegramClient(new StringSession(sessionString), apiId, apiHash, {
     connectionRetries: 5,
     useWSS: false,
+    autoReconnect: true,
+    retryDelay: 1000,
   });
 
   await client.connect();
-  clientInstance = client;
   console.log('[TG] Client connected');
   return client;
 };
@@ -33,15 +32,14 @@ const resolveUser = async (client, telegramUserId) => {
  * Send Stars directly to user balance via Telegram
  */
 const sendStars = async (telegramUserId, amount) => {
+  let client = null;
   try {
     console.log(`[StarsService] Sending ${amount} stars to ${telegramUserId}`);
-    const client = await getClient();
+    client = await getClient();
     const user = await resolveUser(client, telegramUserId);
 
     const inputUser = new Api.InputUser({ userId: user.id, accessHash: user.accessHash });
-    const inputPeer = new Api.InputPeerUser({ userId: user.id, accessHash: user.accessHash });
 
-    // Get gift options for exact amount
     const giftOptions = await client.invoke(new Api.payments.GetStarsGiftOptions({ userId: inputUser }));
     const option = giftOptions.find(o => parseInt(o.stars) === amount);
     if (!option) {
@@ -71,6 +69,8 @@ const sendStars = async (telegramUserId, amount) => {
   } catch (err) {
     console.error(`[StarsService] sendStars error:`, err.message);
     return { success: false, external_id: null, error: err.message };
+  } finally {
+    if (client) try { await client.disconnect(); } catch {}
   }
 };
 
@@ -78,14 +78,14 @@ const sendStars = async (telegramUserId, amount) => {
  * Send a Star Gift to user
  */
 const sendStarGift = async (telegramUserId, giftId = null) => {
+  let client = null;
   try {
     console.log(`[StarsService] Sending star gift to ${telegramUserId}`);
-    const client = await getClient();
+    client = await getClient();
     const user = await resolveUser(client, telegramUserId);
 
     const inputPeer = new Api.InputPeerUser({ userId: user.id, accessHash: user.accessHash });
 
-    // Get available gifts
     const gifts = await client.invoke(new Api.payments.GetStarGifts({ hash: 0 }));
 
     let gift;
@@ -93,28 +93,19 @@ const sendStarGift = async (telegramUserId, giftId = null) => {
       gift = gifts.gifts.find(g => g.id?.toString() === String(giftId));
     }
     if (!gift) {
-      // Get current stars balance
       const status = await client.invoke(new Api.payments.GetStarsStatus({ peer: new Api.InputPeerSelf() }));
       const balance = parseInt(status.balance?.amount || 0);
       gift = gifts.gifts.find(g => parseInt(g.stars) <= balance);
     }
     if (!gift) throw new Error('No affordable gift found');
 
-    console.log(`[StarsService] Using gift id=${gift.id} stars=${gift.stars}`);
-
     const form = await client.invoke(new Api.payments.GetPaymentForm({
-      invoice: new Api.InputInvoiceStarGift({
-        peer: inputPeer,
-        giftId: gift.id,
-      }),
+      invoice: new Api.InputInvoiceStarGift({ peer: inputPeer, giftId: gift.id }),
     }));
 
-    const result = await client.invoke(new Api.payments.SendStarsForm({
+    await client.invoke(new Api.payments.SendStarsForm({
       formId: form.formId,
-      invoice: new Api.InputInvoiceStarGift({
-        peer: inputPeer,
-        giftId: gift.id,
-      }),
+      invoice: new Api.InputInvoiceStarGift({ peer: inputPeer, giftId: gift.id }),
     }));
 
     console.log(`[StarsService] Gift sent successfully to ${telegramUserId}`);
@@ -123,6 +114,8 @@ const sendStarGift = async (telegramUserId, giftId = null) => {
   } catch (err) {
     console.error(`[StarsService] sendStarGift error:`, err.message);
     return { success: false, external_id: null, error: err.message };
+  } finally {
+    if (client) try { await client.disconnect(); } catch {}
   }
 };
 
