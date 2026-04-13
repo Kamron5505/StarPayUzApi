@@ -70,17 +70,27 @@ const topUpBalance = async (req, res, next) => {
     const { username, telegram_id, amount, description = 'Admin top-up' } = req.body;
     const amountInt = parseInt(amount);
 
-    // Bot user topup by telegram_id or username
+    // Bot user topup by telegram_id, username or user_number
     if (telegram_id || username) {
-      const query = telegram_id
-        ? { telegram_id: String(telegram_id) }
-        : { username: username.replace('@', '') };
+      let botUser = null;
 
-      let botUser = await BotUser.findOne(query);
-
-      // If not found by username, try telegram_id as username
-      if (!botUser && username) {
-        botUser = await BotUser.findOne({ telegram_id: username });
+      if (telegram_id) {
+        // Try as telegram_id first
+        botUser = await BotUser.findOne({ telegram_id: String(telegram_id) });
+        // Try as user_number
+        if (!botUser && !isNaN(telegram_id)) {
+          botUser = await BotUser.findOne({ user_number: parseInt(telegram_id) });
+        }
+      } else if (username) {
+        botUser = await BotUser.findOne({ username: username.replace('@', '') });
+        // Try as user_number
+        if (!botUser && !isNaN(username)) {
+          botUser = await BotUser.findOne({ user_number: parseInt(username) });
+        }
+        // Try as telegram_id
+        if (!botUser) {
+          botUser = await BotUser.findOne({ telegram_id: username });
+        }
       }
 
       if (botUser) {
