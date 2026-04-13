@@ -18,5 +18,4 @@ router.get('/users', listUsers);
 router.post('/topup', topUpValidation, topUpBalance);
 router.post('/users/:username/regenerate-key', regenerateApiKey);
 router.patch('/users/:username/toggle', toggleUser);
-
 module.exports = router;
