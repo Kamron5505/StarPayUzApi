@@ -22,10 +22,13 @@ const getOrCreateBotUser = async (req, res, next) => {
     let user = await BotUser.findOne({ telegram_id: String(telegram_id) });
 
     if (!user) {
+      // Get next user number
+      const count = await BotUser.countDocuments();
       user = await BotUser.create({
         telegram_id: String(telegram_id),
         username: username || null,
         full_name: full_name || '',
+        user_number: count + 1,
       });
     } else {
       // Update username/name if changed
@@ -38,6 +41,7 @@ const getOrCreateBotUser = async (req, res, next) => {
       success: true,
       data: {
         telegram_id: user.telegram_id,
+        user_number: user.user_number,
         username: user.username,
         full_name: user.full_name,
         balance_uzs: user.balance_uzs,
@@ -67,6 +71,7 @@ const getBotUserBalance = async (req, res, next) => {
       success: true,
       data: {
         telegram_id: user.telegram_id,
+        user_number: user.user_number,
         balance_uzs: user.balance_uzs,
         total_stars_bought: user.total_stars_bought,
       },

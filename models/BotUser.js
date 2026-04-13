@@ -7,6 +7,10 @@ const botUserSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    user_number: {
+      type: Number,
+      unique: true,
+    },
     username: {
       type: String,
       default: null,

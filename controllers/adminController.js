@@ -1,5 +1,6 @@
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const BotUser = require('../models/BotUser');
 const Transaction = require('../models/Transaction');
 const { v4: uuidv4 } = require('uuid');
 
@@ -57,7 +58,7 @@ const topUpValidation = [
 
 /**
  * POST /api/admin/topup
- * Adds balance to a user account.
+ * Adds balance to a user account (API user by username OR bot user by telegram_id)
  */
 const topUpBalance = async (req, res, next) => {
   try {
@@ -66,35 +67,67 @@ const topUpBalance = async (req, res, next) => {
       return res.status(422).json({ success: false, errors: errors.array() });
     }
 
-    const { username, amount, description = 'Admin top-up' } = req.body;
+    const { username, telegram_id, amount, description = 'Admin top-up' } = req.body;
+    const amountInt = parseInt(amount);
 
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found.' });
+    // Bot user topup by telegram_id or username
+    if (telegram_id || username) {
+      const query = telegram_id
+        ? { telegram_id: String(telegram_id) }
+        : { username: username.replace('@', '') };
+
+      let botUser = await BotUser.findOne(query);
+
+      // If not found by username, try telegram_id as username
+      if (!botUser && username) {
+        botUser = await BotUser.findOne({ telegram_id: username });
+      }
+
+      if (botUser) {
+        const before = botUser.balance_uzs;
+        botUser.balance_uzs += amountInt;
+        await botUser.save();
+
+        return res.json({
+          success: true,
+          message: `Added ${amountInt.toLocaleString()} UZS to bot user ${botUser.telegram_id}.`,
+          data: {
+            telegram_id: botUser.telegram_id,
+            balance_before: before,
+            balance_after: botUser.balance_uzs,
+          },
+        });
+      }
     }
 
-    const balanceBefore = user.balance;
-    user.balance += parseInt(amount);
-    await user.save();
+    // Fallback: API user topup by username
+    if (username) {
+      const user = await User.findOne({ username });
+      if (!user) {
+        return res.status(404).json({ success: false, error: 'User not found.' });
+      }
 
-    await Transaction.create({
-      user: user._id,
-      type: 'credit',
-      amount: parseInt(amount),
-      balance_before: balanceBefore,
-      balance_after: user.balance,
-      description,
-    });
+      const balanceBefore = user.balance;
+      user.balance += amountInt;
+      await user.save();
 
-    return res.json({
-      success: true,
-      message: `Added ${amount} to ${username}'s balance.`,
-      data: {
-        username: user.username,
+      await Transaction.create({
+        user: user._id,
+        type: 'credit',
+        amount: amountInt,
         balance_before: balanceBefore,
         balance_after: user.balance,
-      },
-    });
+        description,
+      });
+
+      return res.json({
+        success: true,
+        message: `Added ${amountInt} stars to ${username}.`,
+        data: { username: user.username, balance_before: balanceBefore, balance_after: user.balance },
+      });
+    }
+
+    return res.status(404).json({ success: false, error: 'User not found.' });
   } catch (err) {
     next(err);
   }
