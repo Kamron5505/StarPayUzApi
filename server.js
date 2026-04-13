@@ -19,6 +19,9 @@ const elderPayRoutes = require('./routes/elderpay');
 
 const app = express();
 
+// Trust Railway proxy
+app.set('trust proxy', 1);
+
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression());
