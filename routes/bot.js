@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { authenticate } = require('../middleware/auth');
+const { authenticateService } = require('../middleware/auth');
 const {
   getOrCreateBotUser,
   getBotUserBalance,
@@ -8,8 +8,7 @@ const {
   getPrices,
 } = require('../controllers/botUserController');
 
-// All bot routes require api_key
-router.use(authenticate);
+router.use(authenticateService);
 
 router.get('/prices', getPrices);
 router.post('/user', getOrCreateBotUser);

@@ -35,6 +35,22 @@ const authenticate = async (req, res, next) => {
 };
 
 /**
+ * Middleware: validates internal service secret (for bot/elderpay routes)
+ */
+const authenticateService = (req, res, next) => {
+  const secret =
+    req.headers['x-service-secret'] ||
+    req.headers['x-api-key'];
+
+  const SERVICE_SECRET = process.env.SERVICE_SECRET || 'secret';
+
+  if (!secret || secret !== SERVICE_SECRET) {
+    return res.status(401).json({ success: false, error: 'Invalid service secret.' });
+  }
+  next();
+};
+
+/**
  * Middleware: ensures the authenticated user is an admin
  */
 const requireAdmin = async (req, res, next) => {
@@ -54,4 +70,4 @@ const requireAdmin = async (req, res, next) => {
   }
 };
 
-module.exports = { authenticate, requireAdmin };
+module.exports = { authenticate, authenticateService, requireAdmin };
