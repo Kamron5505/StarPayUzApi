@@ -3,6 +3,7 @@ const BotUser = require('../models/BotUser');
 const Order = require('../models/Order');
 const Transaction = require('../models/Transaction');
 const { sendStars } = require('../services/starsService');
+const { sendPremium } = require('../services/premiumService');
 const { getPriceForStars, getCustomPrice, STAR_PACKAGES } = require('../config/prices');
 
 // ── Register / Get Bot User ───────────────────────────────────────────────────
@@ -198,6 +199,66 @@ const buyStars = async (req, res, next) => {
   }
 };
 
+// ── Buy Premium ───────────────────────────────────────────────────────────────
+
+/**
+ * POST /api/bot/buy-premium
+ */
+const buyPremium = async (req, res, next) => {
+  try {
+    const { telegram_id, username, months, price } = req.body;
+
+    if (!telegram_id || !username || !months || !price) {
+      return res.status(422).json({ success: false, error: 'telegram_id, username, months and price are required' });
+    }
+
+    const botUser = await BotUser.findOne({ telegram_id: String(telegram_id) });
+    if (!botUser) return res.status(404).json({ success: false, error: 'User not found.' });
+    if (botUser.is_banned) return res.status(403).json({ success: false, error: 'User is banned.' });
+
+    const cost = parseInt(price);
+    if (botUser.balance_uzs < cost) {
+      return res.status(402).json({
+        success: false,
+        error: 'Insufficient balance.',
+        data: { balance_uzs: botUser.balance_uzs, required_uzs: cost },
+      });
+    }
+
+    // Deduct balance
+    botUser.balance_uzs -= cost;
+    await botUser.save();
+
+    // Send premium via Fragment API
+    const result = await sendPremium(username, parseInt(months));
+
+    if (result.success) {
+      return res.json({
+        success: true,
+        message: `Successfully sent ${months}-month Premium to @${username}.`,
+        data: {
+          telegram_id,
+          username,
+          months,
+          price_uzs: cost,
+          balance_uzs_remaining: botUser.balance_uzs,
+          external_id: result.external_id,
+        },
+      });
+    } else {
+      // Rollback
+      botUser.balance_uzs += cost;
+      await botUser.save();
+      return res.status(502).json({
+        success: false,
+        error: result.error || 'Failed to send Premium. Balance refunded.',
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ── Price List ────────────────────────────────────────────────────────────────
 
 /**
@@ -215,5 +276,6 @@ module.exports = {
   getBotUserBalance,
   buyStars,
   buyStarsValidation,
+  buyPremium,
   getPrices,
 };
