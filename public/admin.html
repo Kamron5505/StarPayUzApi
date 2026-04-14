@@ -421,13 +421,16 @@
               <option value="failed">Failed</option>
             </select>
             <button class="btn" onclick="loadOrders()">Filtrlash</button>
+            <button class="btn" style="background:linear-gradient(135deg,#ef4444,#b91c1c);width:auto;padding:12px 20px" onclick="clearOrders()">🗑 Tozalash</button>
           </div>
+          <div id="clearOrdersResult" style="margin-bottom:12px;font-size:13px"></div>
           <table>
             <thead>
               <tr>
                 <th>ID</th>
                 <th>Telegram ID</th>
-                <th>Stars</th>
+                <th>Tur</th>
+                <th>Miqdor</th>
                 <th>Status</th>
                 <th>Sana</th>
               </tr>
@@ -709,17 +712,36 @@
       const data = await api(url);
       const orders = data.data?.orders || [];
 
+      const typeLabel = (o) => {
+        if (o.type === 'premium') return '💎 Premium';
+        if (o.type === 'gift') return '🎁 Gift';
+        return '⭐ Stars';
+      };
+
       document.getElementById('ordersTable').innerHTML = orders.map(o => `
     <tr>
       <td><code>${o._id?.slice(-8)}</code></td>
       <td><code>${o.telegram_user_id}</code></td>
-      <td>${o.amount} ⭐</td>
+      <td>${typeLabel(o)}</td>
+      <td><b>${o.amount?.toLocaleString()}</b></td>
       <td><span class="badge badge-${o.status === 'success' ? 'success' : o.status === 'pending' ? 'pending' : 'failed'}">${o.status}</span></td>
       <td>${new Date(o.createdAt).toLocaleString()}</td>
     </tr>
   `).join('');
 
       renderPagination('ordersPagination', data.data?.pagination || {}, p => loadOrders(p));
+    }
+
+    async function clearOrders() {
+      if (!confirm('Barcha buyurtmalarni o\'chirmoqchimisiz?')) return;
+      const data = await apiPost('/api/admin/orders/clear', {});
+      const el = document.getElementById('clearOrdersResult');
+      if (data.success) {
+        el.innerHTML = `<span style="color:#22c55e">✅ ${data.message}</span>`;
+        loadOrders();
+      } else {
+        el.innerHTML = `<span style="color:#ef4444">❌ ${data.error}</span>`;
+      }
     }
 
     async function loadTransactions(page = 1) {

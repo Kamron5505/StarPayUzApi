@@ -289,6 +289,14 @@ const deductBalance = async (req, res, next) => {
 
 // ── List All Orders (Admin) ───────────────────────────────────────────────────
 
+const clearAllOrders = async (req, res, next) => {
+  try {
+    const Order = require('../models/Order');
+    const result = await Order.deleteMany({});
+    return res.json({ success: true, message: `${result.deletedCount} ta buyurtma o'chirildi.` });
+  } catch (err) { next(err); }
+};
+
 const listAllOrders = async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -388,6 +396,6 @@ module.exports = {
   deductBalance, deductValidation,
   getSettings, updateSetting,
   listUsers, listBotUsers,
-  listAllOrders, listAllTransactions,
+  listAllOrders, listAllTransactions, clearAllOrders,
   regenerateApiKey, toggleUser,
 };

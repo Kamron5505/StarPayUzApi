@@ -21,6 +21,11 @@ const orderSchema = new mongoose.Schema(
       enum: ['pending', 'processing', 'success', 'failed'],
       default: 'pending',
     },
+    type: {
+      type: String,
+      enum: ['stars', 'premium', 'gift'],
+      default: 'stars',
+    },
     error_message: {
       type: String,
       default: null,

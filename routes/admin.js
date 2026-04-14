@@ -6,7 +6,7 @@ const {
   deductBalance, deductValidation,
   getSettings, updateSetting,
   listUsers, listBotUsers,
-  listAllOrders, listAllTransactions,
+  listAllOrders, listAllTransactions, clearAllOrders,
   regenerateApiKey, toggleUser,
 } = require('../controllers/adminController');
 
@@ -20,6 +20,7 @@ router.post('/deduct', deductValidation, deductBalance);
 router.get('/settings', getSettings);
 router.post('/settings', updateSetting);
 router.get('/orders', listAllOrders);
+router.post('/orders/clear', clearAllOrders);
 router.get('/transactions', listAllTransactions);
 router.post('/users/:username/regenerate-key', regenerateApiKey);
 router.patch('/users/:username/toggle', toggleUser);
