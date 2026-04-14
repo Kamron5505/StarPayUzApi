@@ -363,6 +363,8 @@
         <div class="nav-item" onclick="showPage('transactions')" id="nav-transactions"><span>💳</span> Tranzaksiyalar
         </div>
         <div class="nav-item" onclick="showPage('topup')" id="nav-topup"><span>💰</span> Balans to'ldirish</div>
+        <div class="nav-item" onclick="showPage('prices')" id="nav-prices"><span>📊</span> Narxlar</div>
+        <div class="nav-item" onclick="showPage('calc')" id="nav-calc"><span>🧮</span> Kalkulyator</div>
       </nav>
       <main>
 
@@ -484,6 +486,88 @@
           </div>
         </div>
 
+        <!-- Prices -->
+        <div class="page" id="page-prices">
+          <div class="section-title">⭐ Yulduz narxini yangilash</div>
+          <div class="user-detail">
+            <div style="display:flex;gap:12px;margin-bottom:12px;align-items:center">
+              <span style="color:#94a3b8;font-size:14px">Joriy narx:</span>
+              <span id="currentStarPrice" style="color:#f59e0b;font-weight:700;font-size:16px">—</span>
+              <span style="color:#64748b;font-size:13px">so'm / 1 ⭐</span>
+            </div>
+            <div style="display:flex;gap:12px">
+              <input type="number" id="newStarPrice" placeholder="Yangi narx (so'm)" style="margin:0" />
+              <button class="btn" style="width:auto;padding:12px 20px" onclick="updateStarPrice()">Yangilash</button>
+            </div>
+            <div id="starPriceResult" style="margin-top:12px;font-size:13px"></div>
+          </div>
+
+          <div class="section-title" style="margin-top:24px">💎 Premium narxlarini yangilash</div>
+          <div class="user-detail">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="premiumPricesGrid">
+              <div>
+                <label style="font-size:12px;color:#64748b">3 oy (so'm)</label>
+                <input type="number" id="premium_3" placeholder="160000" style="margin:6px 0 0" />
+              </div>
+              <div>
+                <label style="font-size:12px;color:#64748b">6 oy (so'm)</label>
+                <input type="number" id="premium_6" placeholder="220000" style="margin:6px 0 0" />
+              </div>
+              <div>
+                <label style="font-size:12px;color:#64748b">12 oy (so'm)</label>
+                <input type="number" id="premium_12" placeholder="380000" style="margin:6px 0 0" />
+              </div>
+            </div>
+            <button class="btn" style="width:auto;padding:12px 20px;margin-top:12px" onclick="updatePremiumPrices()">Saqlash</button>
+            <div id="premiumPriceResult" style="margin-top:12px;font-size:13px"></div>
+          </div>
+        </div>
+
+        <!-- Calculator -->
+        <div class="page" id="page-calc">
+          <div class="section-title">🧮 TON → UZS Kalkulyator</div>
+          <div class="user-detail">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+              <div>
+                <label style="font-size:12px;color:#64748b">TON miqdori</label>
+                <input type="number" id="calcTon" placeholder="1.0" step="0.01" style="margin:6px 0 0" oninput="calcConvert()" />
+              </div>
+              <div>
+                <label style="font-size:12px;color:#64748b">TON/USD kurs</label>
+                <input type="number" id="calcTonUsd" placeholder="3.20" step="0.01" style="margin:6px 0 0" oninput="calcConvert()" />
+              </div>
+              <div>
+                <label style="font-size:12px;color:#64748b">USD/UZS kurs</label>
+                <input type="number" id="calcUsdUzs" placeholder="12800" style="margin:6px 0 0" oninput="calcConvert()" />
+              </div>
+              <div>
+                <label style="font-size:12px;color:#64748b">Fragment komissiya (%)</label>
+                <input type="number" id="calcCommission" placeholder="5" step="0.1" style="margin:6px 0 0" oninput="calcConvert()" />
+              </div>
+            </div>
+            <div id="calcResult" style="background:#070710;border:1px solid #1e1e2e;border-radius:10px;padding:16px;font-size:14px;line-height:2"></div>
+          </div>
+
+          <div class="section-title" style="margin-top:24px">📈 Daromad hisoblash</div>
+          <div class="user-detail">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+              <div>
+                <label style="font-size:12px;color:#64748b">Sotilgan Stars soni</label>
+                <input type="number" id="profitStars" placeholder="1000" style="margin:6px 0 0" oninput="calcProfit()" />
+              </div>
+              <div>
+                <label style="font-size:12px;color:#64748b">Narx (so'm/star)</label>
+                <input type="number" id="profitPrice" placeholder="230" style="margin:6px 0 0" oninput="calcProfit()" />
+              </div>
+              <div>
+                <label style="font-size:12px;color:#64748b">Tannarx (so'm/star)</label>
+                <input type="number" id="profitCost" placeholder="190" style="margin:6px 0 0" oninput="calcProfit()" />
+              </div>
+            </div>
+            <div id="profitResult" style="background:#070710;border:1px solid #1e1e2e;border-radius:10px;padding:16px;font-size:14px;line-height:2"></div>
+          </div>
+        </div>
+
       </main>
     </div>
   </div>
@@ -525,6 +609,7 @@
       if (name === 'users') loadUsers();
       if (name === 'orders') loadOrders();
       if (name === 'transactions') loadTransactions();
+      if (name === 'prices') loadPrices();
     }
 
     async function api(path) {
@@ -715,6 +800,78 @@
       }
       document.getElementById(id).innerHTML = html;
     }
+    async function updateStarPrice() {
+      const price = parseInt(document.getElementById('newStarPrice').value);
+      if (!price || price < 1) return;
+      const data = await apiPost('/api/admin/settings', { key: 'star_price', value: price });
+      const el = document.getElementById('starPriceResult');
+      if (data.success) {
+        el.innerHTML = `<span style="color:#22c55e">✅ Narx yangilandi: ${price.toLocaleString()} so'm/⭐</span>`;
+        document.getElementById('currentStarPrice').textContent = price.toLocaleString();
+      } else {
+        el.innerHTML = `<span style="color:#ef4444">❌ ${data.error}</span>`;
+      }
+    }
+
+    async function updatePremiumPrices() {
+      const p3 = parseInt(document.getElementById('premium_3').value);
+      const p6 = parseInt(document.getElementById('premium_6').value);
+      const p12 = parseInt(document.getElementById('premium_12').value);
+      const updates = [];
+      if (p3) updates.push(apiPost('/api/admin/settings', { key: 'premium_3', value: p3 }));
+      if (p6) updates.push(apiPost('/api/admin/settings', { key: 'premium_6', value: p6 }));
+      if (p12) updates.push(apiPost('/api/admin/settings', { key: 'premium_12', value: p12 }));
+      await Promise.all(updates);
+      document.getElementById('premiumPriceResult').innerHTML = '<span style="color:#22c55e">✅ Saqlandi</span>';
+    }
+
+    async function loadPrices() {
+      const data = await api('/api/admin/settings');
+      if (data.success) {
+        const s = data.data;
+        if (s.star_price) document.getElementById('currentStarPrice').textContent = parseInt(s.star_price).toLocaleString();
+        if (s.premium_3) document.getElementById('premium_3').value = s.premium_3;
+        if (s.premium_6) document.getElementById('premium_6').value = s.premium_6;
+        if (s.premium_12) document.getElementById('premium_12').value = s.premium_12;
+      }
+    }
+
+    function calcConvert() {
+      const ton = parseFloat(document.getElementById('calcTon').value) || 0;
+      const tonUsd = parseFloat(document.getElementById('calcTonUsd').value) || 0;
+      const usdUzs = parseFloat(document.getElementById('calcUsdUzs').value) || 0;
+      const commission = parseFloat(document.getElementById('calcCommission').value) || 0;
+      if (!ton || !tonUsd || !usdUzs) return;
+      const usd = ton * tonUsd;
+      const uzs = usd * usdUzs;
+      const commissionUzs = uzs * (commission / 100);
+      const net = uzs - commissionUzs;
+      document.getElementById('calcResult').innerHTML = `
+        💰 <b>${ton} TON</b> = <b>$${usd.toFixed(2)}</b><br>
+        🇺🇿 Brutto: <b>${Math.round(uzs).toLocaleString()} so'm</b><br>
+        📉 Komissiya (${commission}%): <b>-${Math.round(commissionUzs).toLocaleString()} so'm</b><br>
+        ✅ Netto: <b style="color:#22c55e">${Math.round(net).toLocaleString()} so'm</b>
+      `;
+    }
+
+    function calcProfit() {
+      const stars = parseInt(document.getElementById('profitStars').value) || 0;
+      const price = parseInt(document.getElementById('profitPrice').value) || 0;
+      const cost = parseInt(document.getElementById('profitCost').value) || 0;
+      if (!stars || !price) return;
+      const revenue = stars * price;
+      const expense = stars * cost;
+      const profit = revenue - expense;
+      const margin = revenue ? ((profit / revenue) * 100).toFixed(1) : 0;
+      document.getElementById('profitResult').innerHTML = `
+        ⭐ Stars: <b>${stars.toLocaleString()}</b><br>
+        💵 Daromad: <b>${revenue.toLocaleString()} so'm</b><br>
+        💸 Xarajat: <b>${expense.toLocaleString()} so'm</b><br>
+        📈 Foyda: <b style="color:#22c55e">${profit.toLocaleString()} so'm</b><br>
+        📊 Margin: <b style="color:#f59e0b">${margin}%</b>
+      `;
+    }
+
   </script>
 </body>
 

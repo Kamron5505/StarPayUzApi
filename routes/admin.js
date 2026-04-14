@@ -7,6 +7,8 @@ const {
   topUpValidation,
   deductBalance,
   deductValidation,
+  getSettings,
+  updateSetting,
   listUsers,
   regenerateApiKey,
   toggleUser,
@@ -19,6 +21,8 @@ router.post('/users', createUserValidation, createUser);
 router.get('/users', listUsers);
 router.post('/topup', topUpValidation, topUpBalance);
 router.post('/deduct', deductValidation, deductBalance);
+router.get('/settings', getSettings);
+router.post('/settings', updateSetting);
 router.post('/users/:username/regenerate-key', regenerateApiKey);
 router.patch('/users/:username/toggle', toggleUser);
 module.exports = router;

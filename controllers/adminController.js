@@ -2,6 +2,7 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const BotUser = require('../models/BotUser');
 const Transaction = require('../models/Transaction');
+const Setting = require('../models/Setting');
 const { v4: uuidv4 } = require('uuid');
 
 // ── Create API Key ────────────────────────────────────────────────────────────
@@ -286,6 +287,39 @@ const deductBalance = async (req, res, next) => {
   }
 };
 
+// ── Settings ──────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/admin/settings
+ */
+const getSettings = async (req, res, next) => {
+  try {
+    const settings = await Setting.find({});
+    const data = {};
+    settings.forEach(s => { data[s.key] = s.value; });
+    return res.json({ success: true, data });
+  } catch (err) { next(err); }
+};
+
+/**
+ * POST /api/admin/settings
+ * { key, value }
+ */
+const updateSetting = async (req, res, next) => {
+  try {
+    const { key, value } = req.body;
+    if (!key || value === undefined) {
+      return res.status(422).json({ success: false, error: 'key and value required' });
+    }
+    await Setting.findOneAndUpdate(
+      { key },
+      { value: String(value) },
+      { upsert: true, new: true }
+    );
+    return res.json({ success: true, message: `Setting '${key}' updated to '${value}'` });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   createUser,
   createUserValidation,
@@ -293,6 +327,8 @@ module.exports = {
   topUpValidation,
   deductBalance,
   deductValidation,
+  getSettings,
+  updateSetting,
   listUsers,
   regenerateApiKey,
   toggleUser,
