@@ -460,9 +460,18 @@
             <div style="display:flex;gap:12px;margin-bottom:16px">
               <input type="text" id="topupUsername" placeholder="Username yoki Telegram ID" style="margin:0" />
               <input type="number" id="topupAmount" placeholder="Miqdor (UZS)" style="margin:0" />
-              <button class="btn" style="width:auto;padding:12px 20px" onclick="topupBalance()">To'ldirish</button>
+              <button class="btn" style="width:auto;padding:12px 20px;background:linear-gradient(135deg,#22c55e,#16a34a)" onclick="topupBalance()">➕ To'ldirish</button>
             </div>
             <div id="topupResult"></div>
+          </div>
+          <div class="section-title">Foydalanuvchi balansini yechib olish</div>
+          <div class="user-detail">
+            <div style="display:flex;gap:12px;margin-bottom:16px">
+              <input type="text" id="deductUsername" placeholder="Username yoki Telegram ID" style="margin:0" />
+              <input type="number" id="deductAmount" placeholder="Miqdor (UZS)" style="margin:0" />
+              <button class="btn" style="width:auto;padding:12px 20px;background:linear-gradient(135deg,#ef4444,#b91c1c)" onclick="deductBalance()">➖ Yechib olish</button>
+            </div>
+            <div id="deductResult"></div>
           </div>
           <div class="section-title">Yangi API kalit yaratish</div>
           <div class="user-detail">
@@ -652,7 +661,6 @@
       const amount = parseInt(document.getElementById('topupAmount').value);
       if (!username || !amount) return;
 
-      // Detect if input is telegram_id (numeric) or username
       const body = isNaN(username)
         ? { username, amount }
         : { telegram_id: username, amount };
@@ -661,6 +669,24 @@
       const el = document.getElementById('topupResult');
       if (data.success) {
         el.innerHTML = `<span style="color:#22c55e">✅ ${data.message}</span>`;
+      } else {
+        el.innerHTML = `<span style="color:#ef4444">❌ ${data.error}</span>`;
+      }
+    }
+
+    async function deductBalance() {
+      const username = document.getElementById('deductUsername').value.trim();
+      const amount = parseInt(document.getElementById('deductAmount').value);
+      if (!username || !amount) return;
+
+      const body = isNaN(username)
+        ? { username, amount }
+        : { telegram_id: username, amount };
+
+      const data = await apiPost('/api/admin/deduct', body);
+      const el = document.getElementById('deductResult');
+      if (data.success) {
+        el.innerHTML = `<span style="color:#22c55e">✅ ${data.message}<br>Oldin: ${data.data.balance_before.toLocaleString()} → Keyin: ${data.data.balance_after.toLocaleString()} UZS</span>`;
       } else {
         el.innerHTML = `<span style="color:#ef4444">❌ ${data.error}</span>`;
       }

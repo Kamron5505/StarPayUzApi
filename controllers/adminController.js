@@ -224,11 +224,75 @@ const toggleUser = async (req, res, next) => {
   }
 };
 
+// ── Deduct Balance ────────────────────────────────────────────────────────────
+
+const deductValidation = [
+  body('username').notEmpty().withMessage('username or telegram_id is required'),
+  body('amount').isInt({ min: 1 }).withMessage('amount must be a positive integer'),
+];
+
+/**
+ * POST /api/admin/deduct
+ * Deducts balance from a bot user by telegram_id, username or user_number
+ */
+const deductBalance = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(422).json({ success: false, errors: errors.array() });
+    }
+
+    const { username, telegram_id, amount } = req.body;
+    const amountInt = parseInt(amount);
+
+    let botUser = null;
+    const query = telegram_id || username;
+
+    botUser = await BotUser.findOne({ telegram_id: String(query) });
+    if (!botUser && !isNaN(query)) {
+      botUser = await BotUser.findOne({ user_number: parseInt(query) });
+    }
+    if (!botUser) {
+      botUser = await BotUser.findOne({ username: String(query).replace('@', '') });
+    }
+
+    if (!botUser) {
+      return res.status(404).json({ success: false, error: 'User not found.' });
+    }
+
+    if (botUser.balance_uzs < amountInt) {
+      return res.status(400).json({
+        success: false,
+        error: `Insufficient balance. Current: ${botUser.balance_uzs.toLocaleString()} UZS`,
+      });
+    }
+
+    const before = botUser.balance_uzs;
+    botUser.balance_uzs -= amountInt;
+    await botUser.save();
+
+    return res.json({
+      success: true,
+      message: `Deducted ${amountInt.toLocaleString()} UZS from user ${botUser.telegram_id}.`,
+      data: {
+        telegram_id: botUser.telegram_id,
+        username: botUser.username,
+        balance_before: before,
+        balance_after: botUser.balance_uzs,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createUser,
   createUserValidation,
   topUpBalance,
   topUpValidation,
+  deductBalance,
+  deductValidation,
   listUsers,
   regenerateApiKey,
   toggleUser,
