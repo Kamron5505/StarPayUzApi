@@ -86,6 +86,7 @@ const getBotUserBalance = async (req, res, next) => {
 const buyStarsValidation = [
   body('telegram_id').notEmpty().withMessage('telegram_id is required'),
   body('stars').isInt({ min: 50, max: 5000 }).withMessage('stars must be between 50 and 5000'),
+  body('username').notEmpty().withMessage('username is required'),
 ];
 
 /**
@@ -99,7 +100,7 @@ const buyStars = async (req, res, next) => {
       return res.status(422).json({ success: false, errors: errors.array() });
     }
 
-    const { telegram_id, stars } = req.body;
+    const { telegram_id, stars, username } = req.body;
     const starsCount = parseInt(stars);
 
     // Get price
@@ -128,18 +129,9 @@ const buyStars = async (req, res, next) => {
       });
     }
 
-    // Check API balance (stars)
-    const apiUser = req.user;
-    if (apiUser.balance < starsCount) {
-      return res.status(503).json({
-        success: false,
-        error: 'Service temporarily unavailable. Please try again later.',
-      });
-    }
-
     // Create order
     const order = await Order.create({
-      user: apiUser._id,
+      user: botUser._id,
       telegram_user_id: String(telegram_id),
       amount: starsCount,
       status: 'pending',
@@ -151,27 +143,11 @@ const buyStars = async (req, res, next) => {
     botUser.total_spent_uzs += price;
     await botUser.save();
 
-    // Deduct stars from API user balance
-    const starsBefore = apiUser.balance;
-    apiUser.balance -= starsCount;
-    await apiUser.save();
-
-    // Record transaction
-    const transaction = await Transaction.create({
-      user: apiUser._id,
-      type: 'debit',
-      amount: starsCount,
-      balance_before: starsBefore,
-      balance_after: apiUser.balance,
-      description: `Bot purchase: ${starsCount} stars for Telegram user ${telegram_id} (${price} UZS)`,
-      order: order._id,
-    });
-
     // Send stars via Fragment
     order.status = 'processing';
     await order.save();
 
-    const result = await sendStars(String(telegram_id), starsCount);
+    const result = await sendStars(username, starsCount);
 
     if (result.success) {
       order.status = 'success';
@@ -198,9 +174,6 @@ const buyStars = async (req, res, next) => {
       botUser.balance_uzs += price;
       botUser.total_spent_uzs -= price;
       await botUser.save();
-
-      apiUser.balance += starsCount;
-      await apiUser.save();
 
       order.status = 'failed';
       order.error_message = result.error;
