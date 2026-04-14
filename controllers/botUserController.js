@@ -86,7 +86,6 @@ const getBotUserBalance = async (req, res, next) => {
 const buyStarsValidation = [
   body('telegram_id').notEmpty().withMessage('telegram_id is required'),
   body('stars').isInt({ min: 50, max: 5000 }).withMessage('stars must be between 50 and 5000'),
-  body('username').notEmpty().withMessage('username is required'),
 ];
 
 /**
@@ -102,6 +101,15 @@ const buyStars = async (req, res, next) => {
 
     const { telegram_id, stars, username } = req.body;
     const starsCount = parseInt(stars);
+
+    if (!username) {
+      return res.status(422).json({ success: false, error: 'username is required. User must have a Telegram username.' });
+    }
+
+    // Reject numeric-only usernames (telegram_id fallback)
+    if (/^\d+$/.test(username)) {
+      return res.status(422).json({ success: false, error: 'User does not have a Telegram username. Cannot send stars.' });
+    }
 
     // Get price
     const price = getPriceForStars(starsCount) || getCustomPrice(starsCount);
