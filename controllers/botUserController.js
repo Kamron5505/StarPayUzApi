@@ -259,6 +259,30 @@ const buyPremium = async (req, res, next) => {
   }
 };
 
+// ── Buy Gift ──────────────────────────────────────────────────────────────────
+
+const buyGift = async (req, res, next) => {
+  try {
+    const { telegram_id, username, gift_name, price } = req.body;
+    if (!telegram_id || !username || !gift_name || !price) {
+      return res.status(422).json({ success: false, error: 'telegram_id, username, gift_name and price required' });
+    }
+    const cost = parseInt(price);
+    const botUser = await BotUser.findOne({ telegram_id: String(telegram_id) });
+    if (!botUser) return res.status(404).json({ success: false, error: 'User not found.' });
+    if (botUser.balance_uzs < cost) {
+      return res.status(402).json({ success: false, error: 'Insufficient balance.' });
+    }
+    botUser.balance_uzs -= cost;
+    await botUser.save();
+    return res.json({
+      success: true,
+      message: `Gift '${gift_name}' sent to @${username}.`,
+      data: { telegram_id, username, gift_name, price: cost, balance_uzs_remaining: botUser.balance_uzs },
+    });
+  } catch (err) { next(err); }
+};
+
 // ── Price List ────────────────────────────────────────────────────────────────
 
 /**
@@ -277,5 +301,6 @@ module.exports = {
   buyStars,
   buyStarsValidation,
   buyPremium,
+  buyGift,
   getPrices,
 };
