@@ -287,7 +287,69 @@ const deductBalance = async (req, res, next) => {
   }
 };
 
-// ── Settings ──────────────────────────────────────────────────────────────────
+// ── List All Orders (Admin) ───────────────────────────────────────────────────
+
+const listAllOrders = async (req, res, next) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+    const Order = require('../models/Order');
+
+    const filter = {};
+    if (req.query.status) filter.status = req.query.status;
+
+    const [orders, total] = await Promise.all([
+      Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Order.countDocuments(filter),
+    ]);
+
+    return res.json({
+      success: true,
+      data: { orders, pagination: { total, page, limit, pages: Math.ceil(total / limit) } },
+    });
+  } catch (err) { next(err); }
+};
+
+// ── List All Transactions (Admin) ─────────────────────────────────────────────
+
+const listAllTransactions = async (req, res, next) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const [txs, total] = await Promise.all([
+      Transaction.find({}).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Transaction.countDocuments(),
+    ]);
+
+    return res.json({
+      success: true,
+      data: { transactions: txs, pagination: { total, page, limit, pages: Math.ceil(total / limit) } },
+    });
+  } catch (err) { next(err); }
+};
+
+// ── List Bot Users (Admin) ────────────────────────────────────────────────────
+
+const listBotUsers = async (req, res, next) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+      BotUser.find({}).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      BotUser.countDocuments(),
+    ]);
+
+    return res.json({
+      success: true,
+      data: { users, pagination: { total, page, limit, pages: Math.ceil(total / limit) } },
+    });
+  } catch (err) { next(err); }
+};
 
 /**
  * GET /api/admin/settings
@@ -321,15 +383,11 @@ const updateSetting = async (req, res, next) => {
 };
 
 module.exports = {
-  createUser,
-  createUserValidation,
-  topUpBalance,
-  topUpValidation,
-  deductBalance,
-  deductValidation,
-  getSettings,
-  updateSetting,
-  listUsers,
-  regenerateApiKey,
-  toggleUser,
+  createUser, createUserValidation,
+  topUpBalance, topUpValidation,
+  deductBalance, deductValidation,
+  getSettings, updateSetting,
+  listUsers, listBotUsers,
+  listAllOrders, listAllTransactions,
+  regenerateApiKey, toggleUser,
 };

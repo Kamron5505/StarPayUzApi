@@ -627,8 +627,8 @@
     }
 
     async function loadOverview() {
-      const users = await api('/api/admin/users?limit=1');
-      const orders = await api('/api/orders?limit=5');
+      const users = await api('/api/admin/bot-users?limit=1');
+      const orders = await api('/api/admin/orders?limit=5');
       const total = users.data?.pagination?.total || 0;
 
       document.getElementById('statsGrid').innerHTML = `
@@ -650,7 +650,7 @@
 
     async function loadUsers(page = 1) {
       usersPage = page;
-      const data = await api(`/api/admin/users?page=${page}&limit=20`);
+      const data = await api(`/api/admin/bot-users?page=${page}&limit=20`);
       const users = data.data?.users || [];
       const pagination = data.data?.pagination || {};
 
@@ -671,7 +671,7 @@
     async function searchUsers() {
       const q = document.getElementById('userSearch').value.trim();
       if (!q) return loadUsers();
-      const data = await api(`/api/admin/users?limit=50`);
+      const data = await api(`/api/admin/bot-users?limit=50`);
       const users = (data.data?.users || []).filter(u =>
         u.username?.includes(q) || u.telegram_id?.includes(q) || u._id?.includes(q)
       );
@@ -724,7 +724,7 @@
 
     async function loadTransactions(page = 1) {
       txPage = page;
-      const data = await api(`/api/transactions?page=${page}&limit=20`);
+      const data = await api(`/api/admin/transactions?page=${page}&limit=20`);
       const txs = data.data?.transactions || [];
 
       document.getElementById('transactionsTable').innerHTML = txs.map(t => `
