@@ -52,12 +52,12 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/admin', adminRoutes);
-app.use('/api', apiRoutes);
 app.use('/api/bot', botRoutes);
 app.use('/api/click', clickRoutes);
 app.use('/api/sms', smsRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/elderpay', elderPayRoutes);
+app.use('/api', apiRoutes);
 
 // ── 404 Handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
