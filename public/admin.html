@@ -663,7 +663,7 @@
       <td>${u.username || '—'}</td>
       <td><b>${(u.balance_uzs || 0).toLocaleString()}</b></td>
       <td>${u.total_stars_bought || 0} ⭐</td>
-      <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+      <td>${new Date(u.createdAt).toLocaleDateString("uz-UZ", {timeZone:"Asia/Tashkent"})}</td>
       <td><button class="page-btn" onclick="showUserDetail('${u.telegram_id || u._id}')">Ko'rish</button></td>
     </tr>
   `).join('');
@@ -684,7 +684,7 @@
       <td>${u.username || '—'}</td>
       <td><b>${(u.balance_uzs || 0).toLocaleString()}</b></td>
       <td>${u.total_stars_bought || 0} ⭐</td>
-      <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+      <td>${new Date(u.createdAt).toLocaleDateString("uz-UZ", {timeZone:"Asia/Tashkent"})}</td>
       <td><button class="page-btn" onclick="showUserDetail('${u.telegram_id || u._id}')">Ko'rish</button></td>
     </tr>
   `).join('');
@@ -725,7 +725,7 @@
       <td>${typeLabel(o)}</td>
       <td><b>${o.amount?.toLocaleString()}</b></td>
       <td><span class="badge badge-${o.status === 'success' ? 'success' : o.status === 'pending' ? 'pending' : 'failed'}">${o.status}</span></td>
-      <td>${new Date(o.createdAt).toLocaleString()}</td>
+      <td>${new Date(o.createdAt).toLocaleString("uz-UZ", {timeZone:"Asia/Tashkent"})}</td>
     </tr>
   `).join('');
 
@@ -756,7 +756,7 @@
       <td>${t.balance_before.toLocaleString()}</td>
       <td>${t.balance_after.toLocaleString()}</td>
       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${t.description || '—'}</td>
-      <td>${new Date(t.createdAt).toLocaleString()}</td>
+      <td>${new Date(t.createdAt).toLocaleString("uz-UZ", {timeZone:"Asia/Tashkent"})}</td>
     </tr>
   `).join('');
 
