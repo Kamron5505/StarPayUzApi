@@ -705,7 +705,7 @@
     async function loadOrders(page = 1) {
       ordersPage = page;
       const status = document.getElementById('orderStatus').value;
-      const url = `/api/orders?page=${page}&limit=20${status ? '&status=' + status : ''}`;
+      const url = `/api/admin/orders?page=${page}&limit=20${status ? '&status=' + status : ''}`;
       const data = await api(url);
       const orders = data.data?.orders || [];
 
