@@ -1,5 +1,4 @@
 const router = require('express').Router();
-const { authenticateService } = require('../middleware/auth');
 const {
   getOrCreateBotUser,
   getBotUserBalance,
@@ -7,8 +6,6 @@ const {
   buyStarsValidation,
   getPrices,
 } = require('../controllers/botUserController');
-
-router.use(authenticateService);
 
 router.get('/prices', getPrices);
 router.post('/user', getOrCreateBotUser);
