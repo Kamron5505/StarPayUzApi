@@ -3,7 +3,7 @@
  * Rate: 1 star = 225 UZS
  * Min: 50 stars | Max: 5000 stars
  */
-const PRICE_PER_STAR_UZS = 225;
+const PRICE_PER_STAR_UZS = 200;
 const MIN_STARS = 50;
 const MAX_STARS = 5000;
 
