@@ -96,18 +96,25 @@ const checkOrder = async (req, res) => {
     const { order_id } = req.params;
 
     const response = await axios.get(`${API_URL}`, {
-      params: { method: 'check', order: order_id },
+      params: {
+        method: 'check',
+        order: order_id,
+        shop_id: SHOP_ID,
+        shop_key: SHOP_KEY,
+      },
     });
 
     const result = response.data;
     console.log('[ElderPay] check response:', JSON.stringify(result));
 
-    if (!result || result.status !== 'success') {
-      return res.json({ success: false, status: 'not_found', error: 'Order not found' });
+    // ElderPay returns status:"error" on failure, status:"success" on found
+    if (!result || result.status === 'error') {
+      return res.json({ success: true, data: { order_id, status: 'pending' } });
     }
 
-    const orderData = result.data;
-    const status = orderData.status; // paid | pending | cancel
+    // Get order status from data
+    const orderData = result.data || result;
+    const status = orderData.status || result.status; // paid | pending | cancel
 
     // If paid — credit user balance
     if (status === 'paid') {
@@ -129,8 +136,8 @@ const checkOrder = async (req, res) => {
       success: true,
       data: {
         order_id,
-        status,  // paid | pending | cancel
-        amount: orderData.amount,
+        status,
+        amount: orderData.amount || result.amount,
       },
     });
   } catch (err) {
