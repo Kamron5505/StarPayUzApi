@@ -225,34 +225,45 @@ const buyPremium = async (req, res, next) => {
       });
     }
 
+    // Create order
+    const order = await Order.create({
+      user: botUser._id,
+      telegram_user_id: String(telegram_id),
+      amount: cost,
+      status: 'pending',
+      type: 'premium',
+    });
+
     // Deduct balance
     botUser.balance_uzs -= cost;
     await botUser.save();
 
     // Send premium via Fragment API
+    order.status = 'processing';
+    await order.save();
+
     const result = await sendPremium(username, parseInt(months));
 
     if (result.success) {
+      order.status = 'success';
+      order.external_id = result.external_id;
+      await order.save();
       return res.json({
         success: true,
         message: `Successfully sent ${months}-month Premium to @${username}.`,
         data: {
-          telegram_id,
-          username,
-          months,
-          price_uzs: cost,
+          telegram_id, username, months, price_uzs: cost,
           balance_uzs_remaining: botUser.balance_uzs,
-          external_id: result.external_id,
+          order_id: order._id, external_id: result.external_id,
         },
       });
     } else {
-      // Rollback
       botUser.balance_uzs += cost;
       await botUser.save();
-      return res.status(502).json({
-        success: false,
-        error: result.error || 'Failed to send Premium. Balance refunded.',
-      });
+      order.status = 'failed';
+      order.error_message = result.error;
+      await order.save();
+      return res.status(502).json({ success: false, error: result.error || 'Failed to send Premium. Balance refunded.' });
     }
   } catch (err) {
     next(err);
@@ -273,12 +284,20 @@ const buyGift = async (req, res, next) => {
     if (botUser.balance_uzs < cost) {
       return res.status(402).json({ success: false, error: 'Insufficient balance.' });
     }
+    // Create order
+    const order = await Order.create({
+      user: botUser._id,
+      telegram_user_id: String(telegram_id),
+      amount: cost,
+      status: 'success',
+      type: 'gift',
+    });
     botUser.balance_uzs -= cost;
     await botUser.save();
     return res.json({
       success: true,
       message: `Gift '${gift_name}' sent to @${username}.`,
-      data: { telegram_id, username, gift_name, price: cost, balance_uzs_remaining: botUser.balance_uzs },
+      data: { telegram_id, username, gift_name, price: cost, balance_uzs_remaining: botUser.balance_uzs, order_id: order._id },
     });
   } catch (err) { next(err); }
 };
