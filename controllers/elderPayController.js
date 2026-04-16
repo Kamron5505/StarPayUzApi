@@ -51,7 +51,13 @@ const createOrder = async (req, res) => {
     console.log('[ElderPay] create response:', JSON.stringify(data));
 
     if (data.status === 'error') {
-      return res.status(400).json({ success: false, error: data.message });
+      // ElderPay duplicate amount error — suggest +1
+      const suggested = amountInt + 1;
+      return res.status(409).json({
+        success: false,
+        error: data.message || 'Xatolik',
+        suggested_amount: suggested,
+      });
     }
 
     // Get or create bot user
