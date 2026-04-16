@@ -7,6 +7,7 @@ const {
   getSettings, updateSetting,
   listUsers, listBotUsers,
   listAllOrders, listAllTransactions, clearAllOrders,
+  broadcast,
   regenerateApiKey, toggleUser,
 } = require('../controllers/adminController');
 
@@ -22,6 +23,7 @@ router.post('/settings', updateSetting);
 router.get('/orders', listAllOrders);
 router.post('/orders/clear', clearAllOrders);
 router.get('/transactions', listAllTransactions);
+router.post('/broadcast', broadcast);
 router.post('/users/:username/regenerate-key', regenerateApiKey);
 router.patch('/users/:username/toggle', toggleUser);
 module.exports = router;

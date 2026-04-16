@@ -289,6 +289,39 @@ const deductBalance = async (req, res, next) => {
 
 // ── List All Orders (Admin) ───────────────────────────────────────────────────
 
+// ── Broadcast ─────────────────────────────────────────────────────────────────
+
+const broadcast = async (req, res, next) => {
+  try {
+    const { text } = req.body;
+    if (!text) return res.status(422).json({ success: false, error: 'text required' });
+
+    const BOT_TOKEN = process.env.BOT_TOKEN;
+    if (!BOT_TOKEN) return res.status(500).json({ success: false, error: 'BOT_TOKEN not set' });
+
+    const users = await BotUser.find({}, 'telegram_id').lean();
+    const axios = require('axios');
+
+    let sent = 0, failed = 0;
+    for (const user of users) {
+      try {
+        await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          chat_id: user.telegram_id,
+          text,
+          parse_mode: 'HTML',
+        });
+        sent++;
+      } catch (e) {
+        failed++;
+      }
+      // Rate limit: 30 msg/sec
+      await new Promise(r => setTimeout(r, 35));
+    }
+
+    return res.json({ success: true, sent, failed, total: users.length });
+  } catch (err) { next(err); }
+};
+
 const clearAllOrders = async (req, res, next) => {
   try {
     const Order = require('../models/Order');
@@ -397,5 +430,6 @@ module.exports = {
   getSettings, updateSetting,
   listUsers, listBotUsers,
   listAllOrders, listAllTransactions, clearAllOrders,
+  broadcast,
   regenerateApiKey, toggleUser,
 };

@@ -388,6 +388,7 @@
         <div class="nav-item" onclick="showPage('topup')" id="nav-topup"><span>💰</span> Balans to'ldirish</div>
         <div class="nav-item" onclick="showPage('prices')" id="nav-prices"><span>📊</span> Narxlar</div>
         <div class="nav-item" onclick="showPage('calc')" id="nav-calc"><span>🧮</span> Kalkulyator</div>
+        <div class="nav-item" onclick="showPage('broadcast')" id="nav-broadcast"><span>📢</span> Reklama</div>
       </nav>
       <main>
 
@@ -594,6 +595,22 @@
           </div>
         </div>
 
+        <!-- Broadcast -->
+        <div class="page" id="page-broadcast">
+          <div class="section-title">📢 Barcha foydalanuvchilarga xabar yuborish</div>
+          <div class="user-detail">
+            <div style="margin-bottom:12px">
+              <label style="font-size:12px;color:#64748b;display:block;margin-bottom:6px">Xabar matni (HTML qo'llab-quvvatlanadi)</label>
+              <textarea id="broadcastText" rows="6" placeholder="Xabar kiriting..." style="width:100%;background:#070710;border:1px solid #1e1e2e;border-radius:8px;color:#e2e8f0;font-size:14px;padding:12px;resize:vertical;font-family:inherit"></textarea>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+              <button class="btn" style="width:auto;padding:12px 24px" onclick="sendBroadcast()">📢 Yuborish</button>
+              <span id="broadcastStatus" style="font-size:13px;color:#64748b"></span>
+            </div>
+            <div id="broadcastResult" style="font-size:13px"></div>
+          </div>
+        </div>
+
       </main>
     </div>
   </div>
@@ -636,6 +653,7 @@
       if (name === 'orders') loadOrders();
       if (name === 'transactions') loadTransactions();
       if (name === 'prices') loadPrices();
+      if (name === 'broadcast') document.getElementById('broadcastText').focus();
     }
 
     async function api(path) {
@@ -915,6 +933,24 @@
         📈 Foyda: <b style="color:#22c55e">${profit.toLocaleString()} so'm</b><br>
         📊 Margin: <b style="color:#f59e0b">${margin}%</b>
       `;
+    }
+
+    async function sendBroadcast() {
+      const text = document.getElementById('broadcastText').value.trim();
+      if (!text) return;
+      if (!confirm('Barcha foydalanuvchilarga xabar yuborilsinmi?')) return;
+      const status = document.getElementById('broadcastStatus');
+      const result = document.getElementById('broadcastResult');
+      status.textContent = '⏳ Yuborilmoqda...';
+      result.innerHTML = '';
+      const data = await apiPost('/api/admin/broadcast', { text });
+      if (data.success) {
+        status.textContent = '';
+        result.innerHTML = `<span style="color:#22c55e">✅ Yuborildi: ${data.sent} ta | Xato: ${data.failed} ta</span>`;
+      } else {
+        status.textContent = '';
+        result.innerHTML = `<span style="color:#ef4444">❌ ${data.error}</span>`;
+      }
     }
 
   </script>
