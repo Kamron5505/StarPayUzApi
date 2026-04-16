@@ -39,21 +39,26 @@ const createOrder = async (req, res) => {
     }
 
     // Create order via ElderPay API
-    const response = await axios.post(API_URL, new URLSearchParams({
-      method: 'create',
-      shop_id: SHOP_ID,
-      shop_key: SHOP_KEY,
-      amount: amountInt,
-    }), {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    });
-    const data = response.data;
+    let data;
+    try {
+      const response = await axios.post(API_URL, new URLSearchParams({
+        method: 'create',
+        shop_id: SHOP_ID,
+        shop_key: SHOP_KEY,
+        amount: amountInt,
+      }), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
+      data = response.data;
+    } catch (axiosErr) {
+      // ElderPay may return non-2xx for duplicates
+      data = axiosErr.response?.data || { status: 'error', message: axiosErr.message };
+    }
     console.log('[ElderPay] create response:', JSON.stringify(data));
 
     if (data.status === 'error') {
-      // ElderPay duplicate amount error — suggest +1
       const suggested = amountInt + 1;
-      return res.status(409).json({
+      return res.status(200).json({
         success: false,
         error: data.message || 'Xatolik',
         suggested_amount: suggested,
