@@ -57,11 +57,40 @@ const createOrder = async (req, res) => {
     console.log('[ElderPay] create response:', JSON.stringify(data));
 
     if (data.status === 'error') {
-      const suggested = amountInt + 1;
-      return res.status(200).json({
-        success: false,
-        error: data.message || 'Xatolik',
-        suggested_amount: suggested,
+      // Auto-retry with amount+1 silently
+      let retryAmount = amountInt + 1;
+      let retryData;
+      for (let i = 0; i < 10; i++) {
+        try {
+          const retryResp = await axios.post(API_URL, new URLSearchParams({
+            method: 'create', shop_id: SHOP_ID, shop_key: SHOP_KEY, amount: retryAmount,
+          }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+          retryData = retryResp.data;
+        } catch (e) {
+          retryData = e.response?.data || { status: 'error' };
+        }
+        if (retryData.status !== 'error') break;
+        retryAmount++;
+      }
+      if (!retryData || retryData.status === 'error') {
+        return res.status(400).json({ success: false, error: retryData?.message || 'Xatolik' });
+      }
+      // Use retryData as successful response
+      let botUser = await BotUser.findOne({ telegram_id: String(telegram_id) });
+      if (!botUser) botUser = await BotUser.create({ telegram_id: String(telegram_id) });
+      await Payment.create({
+        bot_user: botUser._id, telegram_id: String(telegram_id),
+        amount_uzs: amountInt, provider: 'manual',
+        provider_transaction_id: retryData.order, status: 'pending',
+      });
+      return res.json({
+        success: true,
+        data: {
+          order_id: retryData.order, amount: amountInt,
+          card_number: process.env.CARD_NUMBER || '9860 1801 0171 2578',
+          card_owner: process.env.CARD_OWNER || 'Isxakova A.',
+          expires_in: 300,
+        },
       });
     }
 
