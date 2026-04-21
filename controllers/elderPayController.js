@@ -23,6 +23,12 @@ const createOrder = async (req, res) => {
       return res.status(422).json({ success: false, error: 'Amount must be between 1000 and 10000000' });
     }
 
+    // Clean up stale pending payments older than 15 minutes
+    await Payment.deleteMany({
+      status: 'pending',
+      createdAt: { $lt: new Date(Date.now() - 15 * 60 * 1000) },
+    });
+
     // Check duplicate pending payment
     const existing = await Payment.findOne({
       amount_uzs: amountInt,
@@ -58,10 +64,10 @@ const createOrder = async (req, res) => {
     console.log('[ElderPay] create response:', JSON.stringify(data));
 
     if (data.status === 'error') {
-      // Auto-retry with amount+1 silently
+      // Auto-retry with amount+1 silently (up to 200 attempts)
       let retryAmount = amountInt + 1;
       let retryData;
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 200; i++) {
         try {
           const retryResp = await axios.post(API_URL, new URLSearchParams({
             method: 'create', shop_id: SHOP_ID, shop_key: SHOP_KEY, amount: retryAmount, over: 60,
