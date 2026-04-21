@@ -103,6 +103,67 @@ mongoose
       console.log(`[Server] Running on http://localhost:${PORT}`);
       console.log(`[Env] NODE_ENV=${process.env.NODE_ENV || 'development'}`);
     });
+
+    // ── Background payment checker ────────────────────────────────────────────
+    const axios = require('axios');
+    const Payment = require('./models/Payment');
+    const BotUser = require('./models/BotUser');
+    const SHOP_ID = process.env.ELDERPAY_SHOP_ID;
+    const SHOP_KEY = process.env.ELDERPAY_SHOP_KEY;
+    const ELDERPAY_URL = process.env.ELDERPAY_API_URL;
+    const BOT_TOKEN = process.env.BOT_TOKEN;
+
+    const checkPendingPayments = async () => {
+      try {
+        const pending = await Payment.find({ status: 'pending' });
+        for (const payment of pending) {
+          try {
+            const resp = await axios.get(ELDERPAY_URL, {
+              params: { method: 'check', order: payment.provider_transaction_id, shop_id: SHOP_ID, shop_key: SHOP_KEY },
+              timeout: 5000,
+            });
+            const data = resp.data;
+            const status = data?.data?.status;
+
+            if (status === 'paid' && payment.status !== 'success') {
+              // Credit user balance
+              const botUser = await BotUser.findOne({ telegram_id: payment.telegram_id });
+              if (botUser) {
+                botUser.balance_uzs += payment.amount_uzs;
+                await botUser.save();
+              }
+              payment.status = 'success';
+              await payment.save();
+              console.log(`[PayChecker] Payment ${payment.provider_transaction_id} PAID. +${payment.amount_uzs} to ${payment.telegram_id}`);
+
+              // Notify user via bot
+              if (BOT_TOKEN) {
+                try {
+                  await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    chat_id: payment.telegram_id,
+                    text: `✅ <b>To'lov muvaffaqiyatli qabul qilindi!</b>\n\n💰 Miqdor: <b>${payment.amount_uzs.toLocaleString()} so'm</b>\n👛 Joriy balans: <b>${botUser ? botUser.balance_uzs.toLocaleString() : '—'} so'm</b>`,
+                    parse_mode: 'HTML',
+                  });
+                } catch (e) {
+                  console.error('[PayChecker] notify error:', e.message);
+                }
+              }
+            } else if (status === 'cancel' || status === 'cancelled') {
+              payment.status = 'cancelled';
+              await payment.save();
+            }
+          } catch (e) {
+            // ignore individual errors
+          }
+        }
+      } catch (e) {
+        console.error('[PayChecker] error:', e.message);
+      }
+    };
+
+    // Run every 10 seconds
+    setInterval(checkPendingPayments, 10000);
+    console.log('[PayChecker] Background payment checker started');
   })
   .catch((err) => {
     console.error('[DB] Connection failed:', err.message);
