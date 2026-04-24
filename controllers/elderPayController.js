@@ -142,14 +142,12 @@ const checkOrder = async (req, res) => {
   try {
     const { order_id } = req.params;
 
-    const response = await axios.get(`${API_URL}`, {
-      params: {
-        method: 'check',
-        order: order_id,
-        shop_id: SHOP_ID,
-        shop_key: SHOP_KEY,
-      },
-    });
+    const response = await axios.post(API_URL, new URLSearchParams({
+      method: 'check',
+      order: order_id,
+      shop_id: SHOP_ID,
+      shop_key: SHOP_KEY,
+    }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
 
     const result = response.data;
     console.log('[ElderPay] check response:', JSON.stringify(result));
@@ -159,9 +157,9 @@ const checkOrder = async (req, res) => {
       return res.json({ success: true, data: { order_id, status: 'pending' } });
     }
 
-    // Get order status from data
+    // Get order status from data — ElderPay puts it in result.data.status
     const orderData = result.data || result;
-    const status = orderData.status || result.status; // paid | pending | cancel
+    const status = orderData.status; // paid | pending | cancel
 
     // If paid — credit user balance
     if (status === 'paid') {
