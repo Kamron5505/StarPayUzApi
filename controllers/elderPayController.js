@@ -82,18 +82,18 @@ const createOrder = async (req, res) => {
       if (!retryData || retryData.status === 'error') {
         return res.status(400).json({ success: false, error: retryData?.message || 'Xatolik' });
       }
-      // Use retryData as successful response
+      // Use retryData as successful response — use retryAmount so ElderPay matches correctly
       let botUser = await BotUser.findOne({ telegram_id: String(telegram_id) });
       if (!botUser) botUser = await BotUser.create({ telegram_id: String(telegram_id) });
       await Payment.create({
         bot_user: botUser._id, telegram_id: String(telegram_id),
-        amount_uzs: amountInt, provider: 'manual',
+        amount_uzs: retryAmount, provider: 'manual',
         provider_transaction_id: retryData.order, status: 'pending',
       });
       return res.json({
         success: true,
         data: {
-          order_id: retryData.order, amount: amountInt,
+          order_id: retryData.order, amount: retryAmount,
           card_number: process.env.CARD_NUMBER || '9860 1801 0171 2578',
           card_owner: process.env.CARD_OWNER || 'Isxakova A.',
           expires_in: 300,
