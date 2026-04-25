@@ -52,7 +52,7 @@ const createOrder = async (req, res) => {
         shop_id: SHOP_ID,
         shop_key: SHOP_KEY,
         amount: amountInt,
-        over: 60,
+        over: 600,
       }), {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
@@ -70,7 +70,7 @@ const createOrder = async (req, res) => {
       for (let i = 0; i < 200; i++) {
         try {
           const retryResp = await axios.post(API_URL, new URLSearchParams({
-            method: 'create', shop_id: SHOP_ID, shop_key: SHOP_KEY, amount: retryAmount, over: 60,
+            method: 'create', shop_id: SHOP_ID, shop_key: SHOP_KEY, amount: retryAmount, over: 600,
           }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
           retryData = retryResp.data;
         } catch (e) {
