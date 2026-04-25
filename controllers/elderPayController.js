@@ -52,7 +52,7 @@ const createOrder = async (req, res) => {
         shop_id: SHOP_ID,
         shop_key: SHOP_KEY,
         amount: amountInt,
-        over: 600,
+        over: 10,
       }), {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
@@ -70,7 +70,7 @@ const createOrder = async (req, res) => {
       for (let i = 0; i < 200; i++) {
         try {
           const retryResp = await axios.post(API_URL, new URLSearchParams({
-            method: 'create', shop_id: SHOP_ID, shop_key: SHOP_KEY, amount: retryAmount, over: 600,
+            method: 'create', shop_id: SHOP_ID, shop_key: SHOP_KEY, amount: retryAmount, over: 10,
           }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
           retryData = retryResp.data;
         } catch (e) {
@@ -79,7 +79,7 @@ const createOrder = async (req, res) => {
         if (retryData.status !== 'error') break;
         retryAmount++;
       }
-      if (!retryData || retryData.status === 'error') {
+      if (!retryData || retryData.status === 'error' || !retryData.order) {
         return res.status(400).json({ success: false, error: retryData?.message || 'Xatolik' });
       }
       // Use retryData as successful response — use retryAmount so ElderPay matches correctly
