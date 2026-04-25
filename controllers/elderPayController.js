@@ -195,4 +195,19 @@ const checkOrder = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, checkOrder };
+/**
+ * GET /api/elderpay/pending
+ * Returns all pending payments (for bot recovery on restart)
+ */
+const getPendingPayments = async (req, res) => {
+  try {
+    const payments = await Payment.find({ status: 'pending' })
+      .select('provider_transaction_id telegram_id amount_uzs createdAt')
+      .lean();
+    return res.json({ success: true, data: payments });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+module.exports = { createOrder, checkOrder, getPendingPayments };
