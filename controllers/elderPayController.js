@@ -142,14 +142,18 @@ const checkOrder = async (req, res) => {
   try {
     const { order_id } = req.params;
 
-    const response = await axios.post(API_URL, new URLSearchParams({
-      method: 'check',
-      order: order_id,
-      shop_id: SHOP_ID,
-      shop_key: SHOP_KEY,
-    }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-
-    const result = response.data;
+    let result;
+    try {
+      const response = await axios.post(API_URL, new URLSearchParams({
+        method: 'check',
+        order: order_id,
+        shop_id: SHOP_ID,
+        shop_key: SHOP_KEY,
+      }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+      result = response.data;
+    } catch (axiosErr) {
+      result = axiosErr.response?.data || { status: 'error' };
+    }
     console.log('[ElderPay] check response:', JSON.stringify(result));
 
     // ElderPay returns status:"error" on failure, status:"success" on found
