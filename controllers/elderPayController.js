@@ -138,12 +138,14 @@ const checkOrder = async (req, res) => {
 
     let result;
     try {
-      const response = await axios.post(API_URL, new URLSearchParams({
-        method: 'check',
-        order: order_id,
-        shop_id: SHOP_ID,
-        shop_key: SHOP_KEY,
-      }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+      const response = await axios.get(`${API_URL}/check`, {
+        params: {
+          order: order_id,
+          shop_id: SHOP_ID,
+          shop_key: SHOP_KEY,
+        },
+        timeout: 5000,
+      });
       result = response.data;
     } catch (axiosErr) {
       result = axiosErr.response?.data || { status: 'error' };

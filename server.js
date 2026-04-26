@@ -118,12 +118,10 @@ mongoose
         const pending = await Payment.find({ status: 'pending', provider_transaction_id: { $ne: null } });
         for (const payment of pending) {
           try {
-            const resp = await axios.post(ELDERPAY_URL, new URLSearchParams({
-              method: 'check',
-              order: payment.provider_transaction_id,
-              shop_id: SHOP_ID,
-              shop_key: SHOP_KEY,
-            }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 5000 });
+            const resp = await axios.get(`${ELDERPAY_URL}/check`, {
+              params: { order: payment.provider_transaction_id, shop_id: SHOP_ID, shop_key: SHOP_KEY },
+              timeout: 5000,
+            });
             const data = resp.data;
             const status = data?.data?.status;
 
