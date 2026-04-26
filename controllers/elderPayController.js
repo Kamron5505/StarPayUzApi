@@ -23,17 +23,11 @@ const createOrder = async (req, res) => {
       return res.status(422).json({ success: false, error: 'Amount must be between 1000 and 10000000' });
     }
 
-    // Clean up stale pending payments older than 15 minutes
-    await Payment.deleteMany({
-      status: 'pending',
-      createdAt: { $lt: new Date(Date.now() - 15 * 60 * 1000) },
-    });
-
-    // Check duplicate pending payment
+    // Check duplicate pending payment (within last 15 min)
     const existing = await Payment.findOne({
       amount_uzs: amountInt,
       status: 'pending',
-      createdAt: { $gte: new Date(Date.now() - 10 * 60 * 1000) },
+      createdAt: { $gte: new Date(Date.now() - 15 * 60 * 1000) },
     });
 
     if (existing && existing.telegram_id !== String(telegram_id)) {
