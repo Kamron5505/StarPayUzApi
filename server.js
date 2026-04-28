@@ -143,7 +143,7 @@ mongoose
                 try {
                   await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                     chat_id: payment.telegram_id,
-                    text: `✅ <b>To'lov muvaffaqiyatli qabul qilindi!</b>\n\n💰 Miqdor: <b>${payment.amount_uzs.toLocaleString()} so'm</b>\n👛 Joriy balans: <b>${botUser ? botUser.balance_uzs.toLocaleString() : '—'} so'm</b>`,
+                    text: `<tg-emoji emoji-id="5774022692642492953">✅</tg-emoji> <b>To'lov muvaffaqiyatli qabul qilindi!</b>\n\n<tg-emoji emoji-id="5258204546391351475">💰</tg-emoji> Miqdor: <b>${payment.amount_uzs.toLocaleString()} so'm</b>\n<tg-emoji emoji-id="5472363448404809929">👛</tg-emoji> Joriy balans: <b>${botUser ? botUser.balance_uzs.toLocaleString() : '—'} so'm</b>`,
                     parse_mode: 'HTML',
                   });
                 } catch (e) {
