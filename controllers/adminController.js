@@ -11,10 +11,6 @@ const createUserValidation = [
   body('username').notEmpty().withMessage('username is required').trim(),
 ];
 
-/**
- * POST /api/admin/users
- * Creates a new user and generates an API key.
- */
 const createUser = async (req, res, next) => {
   try {
     const errors = validationResult(req);
@@ -57,10 +53,6 @@ const topUpValidation = [
   body('amount').isInt({ min: 1 }).withMessage('amount must be a positive integer'),
 ];
 
-/**
- * POST /api/admin/topup
- * Adds balance to a user account (API user by username OR bot user by telegram_id)
- */
 const topUpBalance = async (req, res, next) => {
   try {
     const errors = validationResult(req);
@@ -71,24 +63,19 @@ const topUpBalance = async (req, res, next) => {
     const { username, telegram_id, amount, description = 'Admin top-up' } = req.body;
     const amountInt = parseInt(amount);
 
-    // Bot user topup by telegram_id, username or user_number
     if (telegram_id || username) {
       let botUser = null;
 
       if (telegram_id) {
-        // Try as telegram_id first
         botUser = await BotUser.findOne({ telegram_id: String(telegram_id) });
-        // Try as user_number
         if (!botUser && !isNaN(telegram_id)) {
           botUser = await BotUser.findOne({ user_number: parseInt(telegram_id) });
         }
       } else if (username) {
         botUser = await BotUser.findOne({ username: username.replace('@', '') });
-        // Try as user_number
         if (!botUser && !isNaN(username)) {
           botUser = await BotUser.findOne({ user_number: parseInt(username) });
         }
-        // Try as telegram_id
         if (!botUser) {
           botUser = await BotUser.findOne({ telegram_id: username });
         }
@@ -111,7 +98,6 @@ const topUpBalance = async (req, res, next) => {
       }
     }
 
-    // Fallback: API user topup by username
     if (username) {
       const user = await User.findOne({ username });
       if (!user) {
@@ -146,10 +132,6 @@ const topUpBalance = async (req, res, next) => {
 
 // ── List Users ────────────────────────────────────────────────────────────────
 
-/**
- * GET /api/admin/users
- * Returns all users.
- */
 const listUsers = async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -175,10 +157,6 @@ const listUsers = async (req, res, next) => {
 
 // ── Regenerate API Key ────────────────────────────────────────────────────────
 
-/**
- * POST /api/admin/users/:username/regenerate-key
- * Generates a new API key for a user.
- */
 const regenerateApiKey = async (req, res, next) => {
   try {
     const user = await User.findOne({ username: req.params.username });
@@ -201,10 +179,6 @@ const regenerateApiKey = async (req, res, next) => {
 
 // ── Toggle User Active ────────────────────────────────────────────────────────
 
-/**
- * PATCH /api/admin/users/:username/toggle
- * Activates or deactivates a user.
- */
 const toggleUser = async (req, res, next) => {
   try {
     const user = await User.findOne({ username: req.params.username });
@@ -232,10 +206,6 @@ const deductValidation = [
   body('amount').isInt({ min: 1 }).withMessage('amount must be a positive integer'),
 ];
 
-/**
- * POST /api/admin/deduct
- * Deducts balance from a bot user by telegram_id, username or user_number
- */
 const deductBalance = async (req, res, next) => {
   try {
     const errors = validationResult(req);
@@ -287,8 +257,6 @@ const deductBalance = async (req, res, next) => {
   }
 };
 
-// ── List All Orders (Admin) ───────────────────────────────────────────────────
-
 // ── Broadcast ─────────────────────────────────────────────────────────────────
 
 const broadcast = async (req, res, next) => {
@@ -300,24 +268,34 @@ const broadcast = async (req, res, next) => {
     if (!BOT_TOKEN) return res.status(500).json({ success: false, error: 'BOT_TOKEN not set' });
 
     const users = await BotUser.find({}, 'telegram_id').lean();
+    console.log(`[Broadcast] Found ${users.length} users`);
+    
     const axios = require('axios');
 
     let sent = 0, failed = 0;
     for (const user of users) {
       try {
+        if (!user.telegram_id) {
+          console.log(`[Broadcast] Skipping user with empty telegram_id`);
+          failed++;
+          continue;
+        }
+        
         await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           chat_id: user.telegram_id,
           text,
           parse_mode: 'HTML',
         });
         sent++;
+        console.log(`[Broadcast] Sent to ${user.telegram_id}`);
       } catch (e) {
         failed++;
+        console.log(`[Broadcast] Failed to send to ${user.telegram_id}: ${e.message}`);
       }
-      // Rate limit: 30 msg/sec
       await new Promise(r => setTimeout(r, 35));
     }
 
+    console.log(`[Broadcast] Complete: ${sent} sent, ${failed} failed`);
     return res.json({ success: true, sent, failed, total: users.length });
   } catch (err) { next(err); }
 };
@@ -352,8 +330,6 @@ const listAllOrders = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// ── List All Transactions (Admin) ─────────────────────────────────────────────
-
 const listAllTransactions = async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -371,8 +347,6 @@ const listAllTransactions = async (req, res, next) => {
     });
   } catch (err) { next(err); }
 };
-
-// ── List Bot Users (Admin) ────────────────────────────────────────────────────
 
 const listBotUsers = async (req, res, next) => {
   try {
@@ -392,9 +366,6 @@ const listBotUsers = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-/**
- * GET /api/admin/settings
- */
 const getSettings = async (req, res, next) => {
   try {
     const settings = await Setting.find({});
@@ -404,10 +375,6 @@ const getSettings = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-/**
- * POST /api/admin/settings
- * { key, value }
- */
 const updateSetting = async (req, res, next) => {
   try {
     const { key, value } = req.body;
@@ -423,130 +390,6 @@ const updateSetting = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// ── Get Dashboard Stats ───────────────────────────────────────────────────────
-
-const getDashboardStats = async (req, res, next) => {
-  try {
-    const Order = require('../models/Order');
-    const Payment = require('../models/Payment');
-
-    const [
-      totalUsers,
-      totalOrders,
-      totalTransactions,
-      pendingOrders,
-      successOrders,
-      failedOrders,
-      pendingPayments,
-      successPayments,
-    ] = await Promise.all([
-      BotUser.countDocuments(),
-      Order.countDocuments(),
-      Transaction.countDocuments(),
-      Order.countDocuments({ status: 'pending' }),
-      Order.countDocuments({ status: 'success' }),
-      Order.countDocuments({ status: 'failed' }),
-      Payment.countDocuments({ status: 'pending' }),
-      Payment.countDocuments({ status: 'success' }),
-    ]);
-
-    const totalRevenueUzs = await Payment.aggregate([
-      { $match: { status: 'success' } },
-      { $group: { _id: null, total: { $sum: '$amount_uzs' } } },
-    ]);
-
-    return res.json({
-      success: true,
-      data: {
-        users: totalUsers,
-        orders: totalOrders,
-        transactions: totalTransactions,
-        revenue_uzs: totalRevenueUzs[0]?.total || 0,
-        orders_pending: pendingOrders,
-        orders_success: successOrders,
-        orders_failed: failedOrders,
-        payments_pending: pendingPayments,
-        payments_success: successPayments,
-      },
-    });
-  } catch (err) { next(err); }
-};
-
-// ── Get User Statistics ───────────────────────────────────────────────────────
-
-const getUserStats = async (req, res, next) => {
-  try {
-    const { telegram_id } = req.params;
-    const botUser = await BotUser.findOne({ telegram_id });
-    if (!botUser) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-
-    const Order = require('../models/Order');
-    const userOrders = await Order.find({ telegram_user_id: telegram_id });
-    const successOrders = userOrders.filter(o => o.status === 'success');
-
-    return res.json({
-      success: true,
-      data: {
-        telegram_id: botUser.telegram_id,
-        username: botUser.username,
-        full_name: botUser.full_name,
-        balance_uzs: botUser.balance_uzs,
-        total_spent_uzs: botUser.total_spent_uzs,
-        total_stars_bought: botUser.total_stars_bought,
-        is_banned: botUser.is_banned,
-        total_orders: userOrders.length,
-        successful_orders: successOrders.length,
-        created_at: botUser.createdAt,
-      },
-    });
-  } catch (err) { next(err); }
-};
-
-// ── Ban/Unban User ───────────────────────────────────────────────────────────
-
-const toggleBanUser = async (req, res, next) => {
-  try {
-    const { telegram_id } = req.params;
-    const botUser = await BotUser.findOne({ telegram_id });
-    if (!botUser) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-
-    botUser.is_banned = !botUser.is_banned;
-    await botUser.save();
-
-    return res.json({
-      success: true,
-      message: `User ${botUser.is_banned ? 'banned' : 'unbanned'}.`,
-      data: { telegram_id: botUser.telegram_id, is_banned: botUser.is_banned },
-    });
-  } catch (err) { next(err); }
-};
-
-// ── Get System Info ──────────────────────────────────────────────────────────
-
-const getSystemInfo = async (req, res, next) => {
-  try {
-    const os = require('os');
-    const uptime = process.uptime();
-    const memUsage = process.memoryUsage();
-
-    return res.json({
-      success: true,
-      data: {
-        node_version: process.version,
-        uptime_seconds: Math.floor(uptime),
-        memory_usage_mb: Math.round(memUsage.heapUsed / 1024 / 1024),
-        memory_total_mb: Math.round(memUsage.heapTotal / 1024 / 1024),
-        platform: os.platform(),
-        cpu_count: os.cpus().length,
-      },
-    });
-  } catch (err) { next(err); }
-};
-
 module.exports = {
   createUser, createUserValidation,
   topUpBalance, topUpValidation,
@@ -556,8 +399,4 @@ module.exports = {
   listAllOrders, listAllTransactions, clearAllOrders,
   broadcast,
   regenerateApiKey, toggleUser,
-  getDashboardStats,
-  getUserStats,
-  toggleBanUser,
-  getSystemInfo,
 };
