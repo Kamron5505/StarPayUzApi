@@ -267,37 +267,46 @@ const broadcast = async (req, res, next) => {
     const BOT_TOKEN = process.env.BOT_TOKEN;
     if (!BOT_TOKEN) return res.status(500).json({ success: false, error: 'BOT_TOKEN not set' });
 
-    const users = await BotUser.find({}, 'telegram_id').lean();
-    console.log(`[Broadcast] Found ${users.length} users`);
+    // Получаем пользователей с непустым telegram_id
+    const users = await BotUser.find({ telegram_id: { $exists: true, $ne: null, $ne: '' } }, 'telegram_id').lean();
+    console.log(`[Broadcast] Found ${users.length} users with valid telegram_id`);
+    
+    if (users.length === 0) {
+      return res.json({ 
+        success: false, 
+        message: 'No users with valid telegram_id found',
+        sent: 0, 
+        failed: 0, 
+        total: 0 
+      });
+    }
     
     const axios = require('axios');
 
     let sent = 0, failed = 0;
     for (const user of users) {
       try {
-        if (!user.telegram_id) {
-          console.log(`[Broadcast] Skipping user with empty telegram_id`);
-          failed++;
-          continue;
-        }
-        
-        await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        const response = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           chat_id: user.telegram_id,
           text,
           parse_mode: 'HTML',
-        });
+        }, { timeout: 5000 });
+        
         sent++;
-        console.log(`[Broadcast] Sent to ${user.telegram_id}`);
+        console.log(`[Broadcast] ✅ Sent to ${user.telegram_id}`);
       } catch (e) {
         failed++;
-        console.log(`[Broadcast] Failed to send to ${user.telegram_id}: ${e.message}`);
+        console.log(`[Broadcast] ❌ Failed to ${user.telegram_id}: ${e.response?.status || e.message}`);
       }
-      await new Promise(r => setTimeout(r, 35));
+      await new Promise(r => setTimeout(r, 50));
     }
 
-    console.log(`[Broadcast] Complete: ${sent} sent, ${failed} failed`);
+    console.log(`[Broadcast] Complete: ${sent} sent, ${failed} failed out of ${users.length}`);
     return res.json({ success: true, sent, failed, total: users.length });
-  } catch (err) { next(err); }
+  } catch (err) { 
+    console.error('[Broadcast] Error:', err.message);
+    next(err); 
+  }
 };
 
 const clearAllOrders = async (req, res, next) => {
