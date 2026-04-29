@@ -423,22 +423,6 @@ const updateSetting = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = {
-  createUser, createUserValidation,
-  topUpBalance, topUpValidation,
-  deductBalance, deductValidation,
-  getSettings, updateSetting,
-  listUsers, listBotUsers,
-  listAllOrders, listAllTransactions, clearAllOrders,
-  broadcast,
-  regenerateApiKey, toggleUser,
-  getDashboardStats,
-  getUserStats,
-  toggleBanUser,
-  getSystemInfo,
-};
-
-
 // ── Get Dashboard Stats ───────────────────────────────────────────────────────
 
 const getDashboardStats = async (req, res, next) => {
@@ -563,10 +547,15 @@ const getSystemInfo = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// ── Export new functions ──────────────────────────────────────────────────────
-
 module.exports = {
-  ...module.exports,
+  createUser, createUserValidation,
+  topUpBalance, topUpValidation,
+  deductBalance, deductValidation,
+  getSettings, updateSetting,
+  listUsers, listBotUsers,
+  listAllOrders, listAllTransactions, clearAllOrders,
+  broadcast,
+  regenerateApiKey, toggleUser,
   getDashboardStats,
   getUserStats,
   toggleBanUser,
