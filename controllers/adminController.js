@@ -408,4 +408,24 @@ module.exports = {
   listAllOrders, listAllTransactions, clearAllOrders,
   broadcast,
   regenerateApiKey, toggleUser,
+  checkBotUsers: async (req, res, next) => {
+    try {
+      const total = await BotUser.countDocuments();
+      const withTelegramId = await BotUser.countDocuments({ telegram_id: { $exists: true, $ne: null, $ne: '' } });
+      const sample = await BotUser.find({}).limit(5).lean();
+      
+      return res.json({
+        success: true,
+        data: {
+          total,
+          withTelegramId,
+          sample: sample.map(u => ({ 
+            _id: u._id, 
+            telegram_id: u.telegram_id,
+            username: u.username 
+          }))
+        }
+      });
+    } catch (err) { next(err); }
+  }
 };

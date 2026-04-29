@@ -9,6 +9,7 @@ const {
   listAllOrders, listAllTransactions, clearAllOrders,
   broadcast,
   regenerateApiKey, toggleUser,
+  checkBotUsers,
 } = require('../controllers/adminController');
 
 router.use(requireAdmin);
@@ -24,6 +25,7 @@ router.get('/orders', listAllOrders);
 router.post('/orders/clear', clearAllOrders);
 router.get('/transactions', listAllTransactions);
 router.post('/broadcast', broadcast);
+router.get('/check-bot-users', checkBotUsers);
 router.post('/test-payment', async (req, res, next) => {
   try {
     const { telegram_id } = req.body;
