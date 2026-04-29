@@ -432,4 +432,143 @@ module.exports = {
   listAllOrders, listAllTransactions, clearAllOrders,
   broadcast,
   regenerateApiKey, toggleUser,
+  getDashboardStats,
+  getUserStats,
+  toggleBanUser,
+  getSystemInfo,
+};
+
+
+// ── Get Dashboard Stats ───────────────────────────────────────────────────────
+
+const getDashboardStats = async (req, res, next) => {
+  try {
+    const Order = require('../models/Order');
+    const Payment = require('../models/Payment');
+
+    const [
+      totalUsers,
+      totalOrders,
+      totalTransactions,
+      pendingOrders,
+      successOrders,
+      failedOrders,
+      pendingPayments,
+      successPayments,
+    ] = await Promise.all([
+      BotUser.countDocuments(),
+      Order.countDocuments(),
+      Transaction.countDocuments(),
+      Order.countDocuments({ status: 'pending' }),
+      Order.countDocuments({ status: 'success' }),
+      Order.countDocuments({ status: 'failed' }),
+      Payment.countDocuments({ status: 'pending' }),
+      Payment.countDocuments({ status: 'success' }),
+    ]);
+
+    const totalRevenueUzs = await Payment.aggregate([
+      { $match: { status: 'success' } },
+      { $group: { _id: null, total: { $sum: '$amount_uzs' } } },
+    ]);
+
+    return res.json({
+      success: true,
+      data: {
+        users: totalUsers,
+        orders: totalOrders,
+        transactions: totalTransactions,
+        revenue_uzs: totalRevenueUzs[0]?.total || 0,
+        orders_pending: pendingOrders,
+        orders_success: successOrders,
+        orders_failed: failedOrders,
+        payments_pending: pendingPayments,
+        payments_success: successPayments,
+      },
+    });
+  } catch (err) { next(err); }
+};
+
+// ── Get User Statistics ───────────────────────────────────────────────────────
+
+const getUserStats = async (req, res, next) => {
+  try {
+    const { telegram_id } = req.params;
+    const botUser = await BotUser.findOne({ telegram_id });
+    if (!botUser) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const Order = require('../models/Order');
+    const userOrders = await Order.find({ telegram_user_id: telegram_id });
+    const successOrders = userOrders.filter(o => o.status === 'success');
+
+    return res.json({
+      success: true,
+      data: {
+        telegram_id: botUser.telegram_id,
+        username: botUser.username,
+        full_name: botUser.full_name,
+        balance_uzs: botUser.balance_uzs,
+        total_spent_uzs: botUser.total_spent_uzs,
+        total_stars_bought: botUser.total_stars_bought,
+        is_banned: botUser.is_banned,
+        total_orders: userOrders.length,
+        successful_orders: successOrders.length,
+        created_at: botUser.createdAt,
+      },
+    });
+  } catch (err) { next(err); }
+};
+
+// ── Ban/Unban User ───────────────────────────────────────────────────────────
+
+const toggleBanUser = async (req, res, next) => {
+  try {
+    const { telegram_id } = req.params;
+    const botUser = await BotUser.findOne({ telegram_id });
+    if (!botUser) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    botUser.is_banned = !botUser.is_banned;
+    await botUser.save();
+
+    return res.json({
+      success: true,
+      message: `User ${botUser.is_banned ? 'banned' : 'unbanned'}.`,
+      data: { telegram_id: botUser.telegram_id, is_banned: botUser.is_banned },
+    });
+  } catch (err) { next(err); }
+};
+
+// ── Get System Info ──────────────────────────────────────────────────────────
+
+const getSystemInfo = async (req, res, next) => {
+  try {
+    const os = require('os');
+    const uptime = process.uptime();
+    const memUsage = process.memoryUsage();
+
+    return res.json({
+      success: true,
+      data: {
+        node_version: process.version,
+        uptime_seconds: Math.floor(uptime),
+        memory_usage_mb: Math.round(memUsage.heapUsed / 1024 / 1024),
+        memory_total_mb: Math.round(memUsage.heapTotal / 1024 / 1024),
+        platform: os.platform(),
+        cpu_count: os.cpus().length,
+      },
+    });
+  } catch (err) { next(err); }
+};
+
+// ── Export new functions ──────────────────────────────────────────────────────
+
+module.exports = {
+  ...module.exports,
+  getDashboardStats,
+  getUserStats,
+  toggleBanUser,
+  getSystemInfo,
 };
