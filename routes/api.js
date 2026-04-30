@@ -7,6 +7,7 @@ const {
   sendStarsValidation,
   getStarsPricingHandler,
   getUserInfoHandler,
+  getWalletBalanceHandler,
 } = require('../controllers/starsController');
 const {
   getPremiumPricingHandler,
@@ -26,6 +27,7 @@ router.get('/balance', getBalance);
 router.post('/stars/send', sendStarsValidation, sendStarsHandler);
 router.post('/stars/pricing', getStarsPricingHandler);
 router.post('/stars/user-info', getUserInfoHandler);
+router.get('/stars/wallet-balance', getWalletBalanceHandler);
 
 // Premium
 router.post('/premium/send', sendPremiumValidation, sendPremiumHandler);

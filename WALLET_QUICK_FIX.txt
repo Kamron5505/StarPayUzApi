@@ -1,0 +1,160 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                ║
+║                    🔧 TON WALLET BALANCE FIX - QUICK GUIDE 🔧                 ║
+║                                                                                ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ PROBLEM                                                                        │
+├────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│ ❌ Stars not sending                                                           │
+│ ❌ Error: "Sabab: Insufficient balance"                                       │
+│ ❌ User balance is OK, but stars still fail                                    │
+│                                                                                │
+│ ROOT CAUSE: TON wallet (Fragment API) is empty or has low balance             │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ SOLUTION                                                                       │
+├────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│ ✅ Added wallet balance check                                                 │
+│ ✅ Added diagnostic endpoint                                                  │
+│ ✅ Improved error messages                                                    │
+│ ✅ Enhanced logging                                                           │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ HOW TO FIX                                                                     │
+├────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│ 1️⃣  Check Wallet Balance                                                      │
+│     curl -H "X-API-Key: YOUR_API_KEY" \                                       │
+│       https://your-app.up.railway.app/api/stars/wallet-balance                │
+│                                                                                │
+│     Response:                                                                 │
+│     {                                                                         │
+│       "success": true,                                                        │
+│       "data": {                                                               │
+│         "balance": 0.05,                                                      │
+│         "status": "LOW",                                                      │
+│         "message": "Low balance - may fail to send stars"                     │
+│       }                                                                       │
+│     }                                                                         │
+│                                                                                │
+│ 2️⃣  If Status is "LOW" or Balance < 0.1 TON                                   │
+│     └─ Top up the TON wallet with more TON coins                              │
+│                                                                                │
+│ 3️⃣  Wait 1-2 minutes for confirmation                                         │
+│                                                                                │
+│ 4️⃣  Check Balance Again                                                       │
+│     curl -H "X-API-Key: YOUR_API_KEY" \                                       │
+│       https://your-app.up.railway.app/api/stars/wallet-balance                │
+│                                                                                │
+│     Should now show: "status": "OK"                                           │
+│                                                                                │
+│ 5️⃣  Test Star Send                                                            │
+│     curl -X POST \                                                            │
+│       -H "X-API-Key: YOUR_API_KEY" \                                          │
+│       -H "Content-Type: application/json" \                                   │
+│       -d '{"username":"@testuser","amount":50}' \                             │
+│       https://your-app.up.railway.app/api/stars/send                          │
+│                                                                                │
+│     Should now succeed! ✅                                                     │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ NEW FEATURES                                                                   │
+├────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│ 🆕 Diagnostic Endpoint: GET /api/stars/wallet-balance                         │
+│    └─ Shows current TON wallet balance                                        │
+│    └─ Shows status (OK or LOW)                                                │
+│    └─ Shows helpful message                                                   │
+│                                                                                │
+│ 🆕 Enhanced Logging                                                            │
+│    └─ Shows wallet balance before each send                                   │
+│    └─ Warns if balance is low                                                 │
+│    └─ Clear success/failure messages                                          │
+│                                                                                │
+│ 🆕 Better Error Messages                                                       │
+│    └─ Clearly indicates if error is wallet-related                            │
+│    └─ Suggests checking wallet balance                                        │
+│    └─ Provides helpful hints                                                  │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ RECOMMENDED WALLET BALANCE                                                     │
+├────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│ 🔴 Critical:    < 0.05 TON  (will fail)                                       │
+│ 🟡 Low:         0.05-0.1 TON (may fail)                                       │
+│ 🟢 OK:          0.1-0.5 TON  (works)                                          │
+│ 🟢 Comfortable: 0.5+ TON     (recommended)                                    │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ FILES MODIFIED                                                                 │
+├────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│ 📝 services/starsService.js                                                   │
+│    ├─ Added wallet balance check                                              │
+│    ├─ Added detailed logging                                                  │
+│    └─ Improved error detection                                                │
+│                                                                                │
+│ 📝 controllers/starsController.js                                             │
+│    ├─ Added getWalletBalanceHandler                                           │
+│    ├─ Improved error messages                                                 │
+│    └─ Added wallet error detection                                            │
+│                                                                                │
+│ 📝 routes/api.js                                                              │
+│    ├─ Added import for getWalletBalanceHandler                                │
+│    └─ Added GET /api/stars/wallet-balance route                               │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ DEPLOYMENT                                                                     │
+├────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│ 1. Commit changes                                                             │
+│ 2. Push to main                                                               │
+│ 3. Railway redeploys automatically                                            │
+│ 4. Test with: GET /api/stars/wallet-balance                                   │
+│ 5. Top up wallet if needed                                                    │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ MONITORING                                                                     │
+├────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│ Check logs for:                                                               │
+│   [StarsService] ⚠️ Low wallet balance: X TON                                  │
+│   [StarsService] ❌ Insufficient wallet balance                                │
+│                                                                                │
+│ If you see these, top up the wallet immediately!                              │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                ║
+║                    ✅ STATUS: READY FOR DEPLOYMENT ✅                         ║
+║                                                                                ║
+║  All fixes implemented ✓                                                      ║
+║  All syntax verified ✓                                                        ║
+║  Diagnostic endpoint ready ✓                                                  ║
+║  Ready for production ✓                                                       ║
+║                                                                                ║
+║                    Next Step: Deploy and Test                                 ║
+║                                                                                ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+Generated: April 29, 2026
+Status: PRODUCTION READY 🚀

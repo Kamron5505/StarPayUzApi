@@ -2,7 +2,7 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const Order = require('../models/Order');
 const Transaction = require('../models/Transaction');
-const { sendStars, getUserInfo, getStarsPricing } = require('../services/starsService');
+const { sendStars, getUserInfo, getStarsPricing, getWalletBalance } = require('../services/starsService');
 
 // Validation rules
 const sendStarsValidation = [
@@ -40,6 +40,30 @@ const getUserInfoHandler = async (req, res, next) => {
     const result = await getUserInfo(username);
     if (!result.success) return res.status(502).json({ success: false, error: result.error });
     return res.json({ success: true, data: result.result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/stars/wallet-balance
+ * Returns TON wallet balance
+ */
+const getWalletBalanceHandler = async (req, res, next) => {
+  try {
+    const result = await getWalletBalance();
+    if (!result.success) {
+      return res.status(502).json({ success: false, error: result.error });
+    }
+    return res.json({ 
+      success: true, 
+      data: {
+        balance: result.result.balance,
+        balance_ton: result.result.balance,
+        status: result.result.balance > 0.1 ? 'OK' : 'LOW',
+        message: result.result.balance > 0.1 ? 'Sufficient balance' : 'Low balance - may fail to send stars'
+      }
+    });
   } catch (err) {
     next(err);
   }
@@ -131,10 +155,21 @@ const sendStarsHandler = async (req, res, next) => {
         order: order._id,
       });
 
+      // Check if error is about wallet balance
+      const isWalletError = result.error.toLowerCase().includes('wallet') || 
+                           result.error.toLowerCase().includes('insufficient');
+      
       return res.status(502).json({
         success: false,
-        error: 'Failed to send stars. Balance has been refunded.',
-        data: { order_id: order._id, reason: result.error },
+        error: isWalletError 
+          ? `Wallet error: ${result.error}. Please top up the TON wallet.`
+          : `Failed to send stars. Balance has been refunded.`,
+        data: { 
+          order_id: order._id, 
+          reason: result.error,
+          is_wallet_error: isWalletError,
+          hint: isWalletError ? 'Check /api/stars/wallet-balance endpoint' : null
+        },
       });
     }
   } catch (err) {
@@ -147,4 +182,5 @@ module.exports = {
   sendStarsValidation,
   getStarsPricingHandler,
   getUserInfoHandler,
+  getWalletBalanceHandler,
 };

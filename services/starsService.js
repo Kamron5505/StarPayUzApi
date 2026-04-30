@@ -44,15 +44,33 @@ const getStarsPricing = async (amount) => {
 const sendStars = async (username, amount) => {
   try {
     console.log(`[StarsService] Sending ${amount} stars to @${username}`);
+    
+    // Check wallet balance first
+    const balanceCheck = await getWalletBalance();
+    if (balanceCheck.success) {
+      console.log(`[StarsService] Wallet balance: ${balanceCheck.result.balance} TON`);
+      if (balanceCheck.result.balance < 0.1) {
+        console.warn(`[StarsService] ⚠️ Low wallet balance: ${balanceCheck.result.balance} TON`);
+      }
+    }
+    
     const { data } = await fragmentClient.post('/stars/buy', { username, amount });
     if (data.ok) {
-      console.log(`[StarsService] Success: ${amount} stars sent to @${username}`);
+      console.log(`[StarsService] ✅ Success: ${amount} stars sent to @${username}`);
       return { success: true, external_id: data.result.message_hash, result: data.result };
     }
-    return { success: false, external_id: null, error: data.message };
+    
+    // Check if error is about insufficient balance
+    const errorMsg = data.message || 'Unknown error';
+    if (errorMsg.toLowerCase().includes('insufficient') || errorMsg.toLowerCase().includes('balance')) {
+      console.error(`[StarsService] ❌ Insufficient wallet balance: ${errorMsg}`);
+      return { success: false, external_id: null, error: `Wallet insufficient balance: ${errorMsg}` };
+    }
+    
+    return { success: false, external_id: null, error: errorMsg };
   } catch (err) {
     const errMsg = err.response?.data?.message || err.message;
-    console.error(`[StarsService] Error:`, errMsg);
+    console.error(`[StarsService] ❌ Error:`, errMsg);
     return { success: false, external_id: null, error: errMsg };
   }
 };
