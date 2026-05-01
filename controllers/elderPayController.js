@@ -23,6 +23,10 @@ const createOrder = async (req, res) => {
       return res.status(422).json({ success: false, error: 'Amount must be between 1000 and 10000000' });
     }
 
+    console.log(`[ElderPay] Creating order: telegram_id=${telegram_id}, amount=${amountInt}`);
+    console.log(`[ElderPay] Config: SHOP_ID=${SHOP_ID}, API_URL=${API_URL}`);
+    console.log(`[ElderPay] Card: ${process.env.CARD_NUMBER}, Owner: ${process.env.CARD_OWNER}`);
+
     // Check duplicate pending payment (within last 15 min)
     const existing = await Payment.findOne({
       amount_uzs: amountInt,
@@ -41,6 +45,7 @@ const createOrder = async (req, res) => {
     // Create order via ElderPay API
     let data;
     try {
+      console.log(`[ElderPay] Sending request to ${API_URL}`);
       const response = await axios.post(API_URL, new URLSearchParams({
         method: 'create',
         shop_id: SHOP_ID,
@@ -49,15 +54,19 @@ const createOrder = async (req, res) => {
         over: 10,
       }), {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        timeout: 10000,
       });
       data = response.data;
+      console.log(`[ElderPay] ✅ Success response:`, JSON.stringify(data));
     } catch (axiosErr) {
       // ElderPay may return non-2xx for duplicates
       data = axiosErr.response?.data || { status: 'error', message: axiosErr.message };
+      console.log(`[ElderPay] ❌ Error response:`, JSON.stringify(data));
     }
     console.log('[ElderPay] create response:', JSON.stringify(data));
 
     if (data.status === 'error') {
+      console.log(`[ElderPay] ⚠️ Status is error, attempting retry with amount+1`);
       // Auto-retry with amount+1 silently (up to 200 attempts)
       let retryAmount = amountInt + 1;
       let retryData;
@@ -65,15 +74,20 @@ const createOrder = async (req, res) => {
         try {
           const retryResp = await axios.post(API_URL, new URLSearchParams({
             method: 'create', shop_id: SHOP_ID, shop_key: SHOP_KEY, amount: retryAmount, over: 10,
-          }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+          }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 10000 });
           retryData = retryResp.data;
+          console.log(`[ElderPay] Retry ${i+1}: amount=${retryAmount}, status=${retryData.status}`);
         } catch (e) {
           retryData = e.response?.data || { status: 'error' };
         }
-        if (retryData.status !== 'error') break;
+        if (retryData.status !== 'error') {
+          console.log(`[ElderPay] ✅ Retry succeeded at attempt ${i+1}`);
+          break;
+        }
         retryAmount++;
       }
       if (!retryData || retryData.status === 'error' || !retryData.order) {
+        console.error(`[ElderPay] ❌ All retries failed`);
         return res.status(400).json({ success: false, error: retryData?.message || 'Xatolik' });
       }
       // Use retryData as successful response — use retryAmount so ElderPay matches correctly
@@ -84,12 +98,15 @@ const createOrder = async (req, res) => {
         amount_uzs: retryAmount, provider: 'manual',
         provider_transaction_id: retryData.order, status: 'pending',
       });
+      const cardNumber = process.env.CARD_NUMBER || '9860 1801 0171 2578';
+      const cardOwner = process.env.CARD_OWNER || 'Isxakova A.';
+      console.log(`[ElderPay] ✅ Returning card: ${cardNumber}, owner: ${cardOwner}`);
       return res.json({
         success: true,
         data: {
           order_id: retryData.order, amount: retryAmount,
-          card_number: process.env.CARD_NUMBER || '9860 1801 0171 2578',
-          card_owner: process.env.CARD_OWNER || 'Isxakova A.',
+          card_number: cardNumber,
+          card_owner: cardOwner,
           expires_in: 300,
         },
       });
@@ -111,14 +128,19 @@ const createOrder = async (req, res) => {
       status: 'pending',
     });
 
+    const cardNumber = process.env.CARD_NUMBER || '9860 1801 0171 2578';
+    const cardOwner = process.env.CARD_OWNER || 'Isxakova A.';
+    console.log(`[ElderPay] ✅ Order created: ${data.order}, amount=${amountInt}`);
+    console.log(`[ElderPay] ✅ Returning card: ${cardNumber}, owner: ${cardOwner}`);
+
     return res.json({
       success: true,
       data: {
         order_id: data.order,
         insert_id: data.insert_id || payment._id,
         amount: amountInt,
-        card_number: process.env.CARD_NUMBER || '9860 1801 0171 2578',
-        card_owner: process.env.CARD_OWNER || 'Isxakova A.',
+        card_number: cardNumber,
+        card_owner: cardOwner,
         expires_in: 300,
       },
     });
