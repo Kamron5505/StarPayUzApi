@@ -170,6 +170,8 @@ const buyStars = async (req, res, next) => {
       order: order._id,
       type: 'debit',
       amount: price,
+      balance_before: uzsBefore,
+      balance_after: botUser.balance_uzs,
       description: `Bought ${starsCount} stars`,
     });
 
@@ -200,9 +202,21 @@ const buyStars = async (req, res, next) => {
       });
     } else {
       // Refund on failure
+      const balanceBefore = botUser.balance_uzs;
       botUser.balance_uzs += price;
       botUser.total_spent_uzs -= price;
       await botUser.save();
+
+      // Create refund transaction
+      await Transaction.create({
+        user: botUser._id,
+        order: order._id,
+        type: 'credit',
+        amount: price,
+        balance_before: balanceBefore,
+        balance_after: botUser.balance_uzs,
+        description: `Refund: Failed to send ${starsCount} stars`,
+      });
 
       order.status = 'failed';
       await order.save();
@@ -279,8 +293,22 @@ const buyPremium = async (req, res, next) => {
         },
       });
     } else {
+      const balanceBefore = botUser.balance_uzs;
       botUser.balance_uzs += cost;
+      botUser.total_spent_uzs -= cost;
       await botUser.save();
+
+      // Create refund transaction
+      await Transaction.create({
+        user: botUser._id,
+        order: order._id,
+        type: 'credit',
+        amount: cost,
+        balance_before: balanceBefore,
+        balance_after: botUser.balance_uzs,
+        description: `Refund: Failed to send ${months}-month Premium`,
+      });
+
       order.status = 'failed';
       order.error_message = result.error;
       await order.save();
@@ -340,6 +368,8 @@ const buyGift = async (req, res, next) => {
       order: order._id,
       type: 'debit',
       amount: cost,
+      balance_before: botUser.balance_uzs,
+      balance_after: botUser.balance_uzs - cost,
       description: `Gift: ${gift_name} to @${target_username}`,
     });
 
