@@ -59,10 +59,16 @@ const getOrCreateBotUser = async (req, res, next) => {
 
 /**
  * GET /api/bot/user/:telegram_id/balance
- */
 const getBotUserBalance = async (req, res, next) => {
   try {
-    const user = await BotUser.findOne({ telegram_id: req.params.telegram_id });
+    // Support both GET and POST
+    const telegram_id = req.params.telegram_id || req.body.telegram_id;
+    
+    if (!telegram_id) {
+      return res.status(422).json({ success: false, error: 'telegram_id is required' });
+    }
+
+    const user = await BotUser.findOne({ telegram_id: String(telegram_id) });
 
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found.' });
@@ -86,7 +92,8 @@ const getBotUserBalance = async (req, res, next) => {
 
 const buyStarsValidation = [
   body('telegram_id').notEmpty().withMessage('telegram_id is required'),
-  body('stars').isInt({ min: 50, max: 5000 }).withMessage('stars must be between 50 and 5000'),
+  body('stars').optional().isInt({ min: 50, max: 5000 }).withMessage('stars must be between 50 and 5000'),
+  body('stars_count').optional().isInt({ min: 50, max: 5000 }).withMessage('stars_count must be between 50 and 5000'),
 ];
 
 /**
@@ -100,20 +107,13 @@ const buyStars = async (req, res, next) => {
       return res.status(422).json({ success: false, errors: errors.array() });
     }
 
-    const { telegram_id, stars, username } = req.body;
-    const starsCount = parseInt(stars);
+    // Support both 'stars' and 'stars_count' parameters
+    const { telegram_id, username } = req.body;
+    const starsCount = parseInt(req.body.stars || req.body.stars_count);
 
-    if (!username) {
-      return res.status(422).json({ success: false, error: 'username is required. User must have a Telegram username.' });
+    if (!starsCount || starsCount < 50 || starsCount > 5000) {
+      return res.status(422).json({ success: false, error: 'stars_count must be between 50 and 5000' });
     }
-
-    // Reject numeric-only usernames (telegram_id fallback)
-    if (/^\d+$/.test(username)) {
-      return res.status(422).json({ success: false, error: 'User does not have a Telegram username. Cannot send stars.' });
-    }
-
-    // Get price
-    const price = getPriceForStars(starsCount) || getCustomPrice(starsCount);
 
     // Get bot user
     const botUser = await BotUser.findOne({ telegram_id: String(telegram_id) });
@@ -124,6 +124,9 @@ const buyStars = async (req, res, next) => {
     if (botUser.is_banned) {
       return res.status(403).json({ success: false, error: 'User is banned.' });
     }
+
+    // Get price
+    const price = getPriceForStars(starsCount) || getCustomPrice(starsCount);
 
     // Check UZS balance
     if (botUser.balance_uzs < price) {
@@ -136,6 +139,14 @@ const buyStars = async (req, res, next) => {
           shortage_uzs: price - botUser.balance_uzs,
         },
       });
+    }
+
+    // If username is not provided, use telegram_id as fallback
+    const targetUsername = username || botUser.username || String(telegram_id);
+
+    // Reject numeric-only usernames if username was explicitly provided
+    if (username && /^\d+$/.test(username)) {
+      return res.status(422).json({ success: false, error: 'User does not have a Telegram username. Cannot send stars.' });
     }
 
     // Create order
@@ -152,11 +163,20 @@ const buyStars = async (req, res, next) => {
     botUser.total_spent_uzs += price;
     await botUser.save();
 
+    // Create transaction
+    await Transaction.create({
+      user: botUser._id,
+      order: order._id,
+      type: 'debit',
+      amount: price,
+      description: `Bought ${starsCount} stars`,
+    });
+
     // Send stars via Fragment
     order.status = 'processing';
     await order.save();
 
-    const result = await sendStars(username, starsCount);
+    const result = await sendStars(targetUsername, starsCount);
 
     if (result.success) {
       order.status = 'success';
@@ -172,6 +192,32 @@ const buyStars = async (req, res, next) => {
         data: {
           telegram_id,
           stars_sent: starsCount,
+          price_uzs: price,
+          balance_uzs_remaining: botUser.balance_uzs,
+          order_id: order._id,
+        },
+      });
+    } else {
+      // Refund on failure
+      botUser.balance_uzs += price;
+      botUser.total_spent_uzs -= price;
+      await botUser.save();
+
+      order.status = 'failed';
+      await order.save();
+
+      return res.status(500).json({
+        success: false,
+        error: result.error || 'Failed to send stars',
+        data: {
+          balance_uzs_refunded: botUser.balance_uzs,
+        },
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
+};
           price_uzs: price,
           balance_uzs_remaining: botUser.balance_uzs,
           order_id: order._id,
@@ -274,16 +320,36 @@ const buyPremium = async (req, res, next) => {
 
 const buyGift = async (req, res, next) => {
   try {
-    const { telegram_id, username, gift_name, price } = req.body;
-    if (!telegram_id || !username || !gift_name || !price) {
-      return res.status(422).json({ success: false, error: 'telegram_id, username, gift_name and price required' });
+    // Support both old and new parameter names
+    const telegram_id = req.body.telegram_id;
+    const target_username = req.body.target_username || req.body.username;
+    const gift_name = req.body.gift_name;
+    const price = req.body.price || 50000; // Default gift price
+    const stars_count = req.body.stars_count;
+
+    if (!telegram_id || !target_username || !gift_name) {
+      return res.status(422).json({ success: false, error: 'telegram_id, target_username (or username), and gift_name required' });
     }
+
     const cost = parseInt(price);
     const botUser = await BotUser.findOne({ telegram_id: String(telegram_id) });
-    if (!botUser) return res.status(404).json({ success: false, error: 'User not found.' });
-    if (botUser.balance_uzs < cost) {
-      return res.status(402).json({ success: false, error: 'Insufficient balance.' });
+    
+    if (!botUser) {
+      return res.status(404).json({ success: false, error: 'User not found.' });
     }
+
+    if (botUser.balance_uzs < cost) {
+      return res.status(402).json({
+        success: false,
+        error: 'Insufficient balance.',
+        data: {
+          balance_uzs: botUser.balance_uzs,
+          required_uzs: cost,
+          shortage_uzs: cost - botUser.balance_uzs,
+        },
+      });
+    }
+
     // Create order
     const order = await Order.create({
       user: botUser._id,
@@ -292,14 +358,34 @@ const buyGift = async (req, res, next) => {
       status: 'success',
       type: 'gift',
     });
+
+    // Create transaction
+    await Transaction.create({
+      user: botUser._id,
+      order: order._id,
+      type: 'debit',
+      amount: cost,
+      description: `Gift: ${gift_name} to @${target_username}`,
+    });
+
     botUser.balance_uzs -= cost;
     await botUser.save();
+
     return res.json({
       success: true,
-      message: `Gift '${gift_name}' sent to @${username}.`,
-      data: { telegram_id, username, gift_name, price: cost, balance_uzs_remaining: botUser.balance_uzs, order_id: order._id },
+      message: `Gift '${gift_name}' sent to @${target_username}.`,
+      data: {
+        telegram_id,
+        target_username,
+        gift_name,
+        price: cost,
+        balance_uzs_remaining: botUser.balance_uzs,
+        order_id: order._id,
+      },
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // ── Price List ────────────────────────────────────────────────────────────────

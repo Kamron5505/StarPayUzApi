@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>StarPay - Telegram Stars</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --tg-theme-bg-color: #ffffff;
+      --tg-theme-text-color: #000000;
+      --tg-theme-hint-color: #999999;
+      --tg-theme-link-color: #0088cc;
+      --tg-theme-button-color: #0088cc;
+      --tg-theme-button-text-color: #ffffff;
+      --tg-theme-secondary-bg-color: #f5f5f5;
+      --primary: #f59e0b;
+      --primary-dark: #d97706;
+      --secondary: #1f2937;
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--tg-theme-secondary-bg-color);
+      color: var(--tg-theme-text-color);
+      padding: 0;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--primary), #f97316);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    /* Balance Card */
+    .balance-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e5e7eb;
+    }
+
+    .balance-label {
+      font-size: 13px;
+      color: var(--tg-theme-hint-color);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .balance-value {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .balance-info {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--tg-theme-hint-color);
+    }
+
+    .balance-info span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+      margin: 0 16px;
+      border-radius: 12px 12px 0 0;
+      overflow: hidden;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--tg-theme-hint-color);
+      transition: all 0.2s;
+      border-bottom: 3px solid transparent;
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    /* Tab Content */
+    .tab-content {
+      display: none;
+      background: white;
+      margin: 0 16px 16px;
+      border-radius: 0 0 12px 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Stars Grid */
+    .stars-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .star-card {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border: 2px solid #fbbf24;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .star-card:active {
+      transform: scale(0.95);
+    }
+
+    .star-card.selected {
+      background: linear-gradient(135deg, var(--primary), #f97316);
+      border-color: var(--primary-dark);
+      color: white;
+    }
+
+    .star-card.selected .star-count,
+    .star-card.selected .star-price {
+      color: white;
+    }
+
+    .star-count {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .star-price {
+      font-size: 12px;
+      color: var(--secondary);
+      font-weight: 600;
+    }
+
+    /* Gifts Grid */
+    .gifts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .gift-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .gift-card:active {
+      transform: scale(0.95);
+    }
+
+    .gift-card.selected {
+      border-color: var(--primary);
+      background: #fffbeb;
+    }
+
+    .gift-emoji {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .gift-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--tg-theme-text-color);
+      word-break: break-word;
+    }
+
+    /* Input */
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    .input-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--tg-theme-text-color);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      background: white;
+      color: var(--tg-theme-text-color);
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+
+    /* Button */
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), #f97316);
+      color: white;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: var(--tg-theme-secondary-bg-color);
+      color: var(--tg-theme-text-color);
+      border: 1px solid #e5e7eb;
+      margin-top: 8px;
+    }
+
+    /* Summary */
+    .summary {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .summary-row:last-child {
+      margin-bottom: 0;
+      padding-top: 6px;
+      border-top: 1px solid #fcd34d;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* Loading */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .loading.active {
+      display: block;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #e5e7eb;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Alert */
+    .alert {
+      display: none;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .alert.active {
+      display: block;
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    .alert-error {
+      background: #fee2e2;
+      color: #7f1d1d;
+      border: 1px solid #fecaca;
+    }
+
+    .alert-info {
+      background: #dbeafe;
+      color: #1e3a8a;
+      border: 1px solid #bfdbfe;
+    }
+
+    /* Footer */
+    .footer {
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--tg-theme-hint-color);
+      margin-bottom: 20px;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .stars-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .gifts-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .header h1 {
+        font-size: 20px;
+      }
+
+      .balance-value {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>⭐ StarPay</h1>
+      <p>Telegram Stars & Gifts</p>
+    </div>
+
+    <!-- Balance Card -->
+    <div class="balance-card">
+      <div class="balance-label">💰 Ваш баланс</div>
+      <div class="balance-value" id="balance">0 сум</div>
+      <div class="balance-info">
+        <span>👤 ID: <span id="userId">—</span></span>
+        <span>⭐ Stars: <span id="starsCount">0</span></span>
+      </div>
+    </div>
+
+    <!-- Alert -->
+    <div id="alert" class="alert"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('stars')">⭐ Звёзды</button>
+      <button class="tab" onclick="switchTab('gifts')">🎁 Подарки</button>
+      <button class="tab" onclick="switchTab('history')">📜 История</button>
+    </div>
+
+    <!-- Stars Tab -->
+    <div id="stars" class="tab-content active">
+      <div class="stars-grid" id="starsGrid"></div>
+      <div class="summary" id="starsSummary" style="display: none;">
+        <div class="summary-row">
+          <span>Количество:</span>
+          <span id="summaryStars">0 ⭐</span>
+        </div>
+        <div class="summary-row">
+          <span>Цена за звезду:</span>
+          <span id="summaryPrice">195 сум</span>
+        </div>
+        <div class="summary-row">
+          <span>Итого:</span>
+          <span id="summaryTotal">0 сум</span>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="buyStarsBtn" onclick="buyStars()" disabled>
+        Купить звёзды
+      </button>
+      <button class="btn btn-secondary" onclick="switchTab('history')">
+        История покупок
+      </button>
+    </div>
+
+    <!-- Gifts Tab -->
+    <div id="gifts" class="tab-content">
+      <div class="input-group">
+        <label class="input-label">👤 Username получателя</label>
+        <input
+          type="text"
+          id="giftUsername"
+          class="input-field"
+          placeholder="@username или username"
+          onchange="updateGiftSummary()"
+        />
+      </div>
+      <div class="gifts-grid" id="giftsGrid"></div>
+      <div class="summary" id="giftsSummary" style="display: none;">
+        <div class="summary-row">
+          <span>Получатель:</span>
+          <span id="summaryGiftUser">—</span>
+        </div>
+        <div class="summary-row">
+          <span>Подарок:</span>
+          <span id="summaryGiftName">—</span>
+        </div>
+        <div class="summary-row">
+          <span>Цена:</span>
+          <span id="summaryGiftPrice">50 000 сум</span>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="sendGiftBtn" onclick="sendGift()" disabled>
+        Отправить подарок
+      </button>
+    </div>
+
+    <!-- History Tab -->
+    <div id="history" class="tab-content">
+      <div id="historyList" style="font-size: 13px; line-height: 1.8;"></div>
+      <div class="loading" id="historyLoading">
+        <div class="spinner"></div>
+        <p style="margin-top: 8px; color: var(--tg-theme-hint-color);">Загрузка...</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      © 2026 StarPay • Telegram Stars Gateway
+    </div>
+  </div>
+
+  <script>
+    // Telegram Web App
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    // State
+    let state = {
+      userId: null,
+      balance: 0,
+      selectedStars: null,
+      selectedGift: null,
+      starPrice: 195,
+      giftPrice: 50000,
+      gifts: {
+        bear: '🐻',
+        heart: '❤️',
+        gift: '🎁',
+        rose: '🌹',
+        cake: '🎂',
+        flower: '🌸',
+        rocket: '🚀',
+        final: '✨',
+        ring: '💍',
+        diamond: '💎',
+        cola: '🥤',
+        unikal1: '👑',
+        unikal2: '🎪',
+        unikal3: '🎭',
+        unikal4: '🎨',
+        unikal5: '🎸',
+        unikal6: '🎯',
+      },
+    };
+
+    // Initialize
+    async function init() {
+      const user = tg.initDataUnsafe?.user;
+      if (user) {
+        state.userId = user.id;
+        document.getElementById('userId').textContent = user.id;
+      }
+
+      await loadBalance();
+      renderStars();
+      renderGifts();
+      await loadHistory();
+    }
+
+    // Load Balance
+    async function loadBalance() {
+      try {
+        const response = await fetch('/api/bot/balance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telegram_id: state.userId }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          state.balance = data.data.balance_uzs || 0;
+          document.getElementById('balance').textContent = `${state.balance.toLocaleString()} сум`;
+          document.getElementById('starsCount').textContent = Math.floor(state.balance / state.starPrice);
+        }
+      } catch (e) {
+        showAlert('Ошибка загрузки баланса', 'error');
+      }
+    }
+
+    // Render Stars
+    function renderStars() {
+      const packages = [50, 100, 250, 500, 1000, 2500, 5000];
+      const grid = document.getElementById('starsGrid');
+      grid.innerHTML = packages
+        .map(
+          (stars) => `
+        <div class="star-card" onclick="selectStars(${stars})">
+          <div class="star-count">${stars}</div>
+          <div class="star-price">${(stars * state.starPrice).toLocaleString()} сум</div>
+        </div>
+      `
+        )
+        .join('');
+    }
+
+    // Select Stars
+    function selectStars(amount) {
+      state.selectedStars = amount;
+      document.querySelectorAll('.star-card').forEach((card) => {
+        card.classList.remove('selected');
+      });
+      event.target.closest('.star-card').classList.add('selected');
+
+      const total = amount * state.starPrice;
+      document.getElementById('starsSummary').style.display = 'block';
+      document.getElementById('summaryStars').textContent = `${amount} ⭐`;
+      document.getElementById('summaryTotal').textContent = `${total.toLocaleString()} сум`;
+      document.getElementById('buyStarsBtn').disabled = state.balance < total;
+    }
+
+    // Buy Stars
+    async function buyStars() {
+      if (!state.selectedStars) return;
+
+      const total = state.selectedStars * state.starPrice;
+      if (state.balance < total) {
+        showAlert('Недостаточно средств', 'error');
+        return;
+      }
+
+      document.getElementById('buyStarsBtn').disabled = true;
+      showAlert('Обработка...', 'info');
+
+      try {
+        const response = await fetch('/api/bot/buy-stars', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telegram_id: state.userId,
+            stars_count: state.selectedStars,
+          }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          showAlert(`✅ Успешно! Куплено ${state.selectedStars} звёзд`, 'success');
+          await loadBalance();
+          state.selectedStars = null;
+          renderStars();
+          document.getElementById('starsSummary').style.display = 'none';
+          await loadHistory();
+        } else {
+          showAlert(data.error || 'Ошибка покупки', 'error');
+        }
+      } catch (e) {
+        showAlert('Ошибка: ' + e.message, 'error');
+      }
+
+      document.getElementById('buyStarsBtn').disabled = false;
+    }
+
+    // Render Gifts
+    function renderGifts() {
+      const grid = document.getElementById('giftsGrid');
+      grid.innerHTML = Object.entries(state.gifts)
+        .map(
+          ([name, emoji]) => `
+        <div class="gift-card" onclick="selectGift('${name}')">
+          <div class="gift-emoji">${emoji}</div>
+          <div class="gift-name">${name}</div>
+        </div>
+      `
+        )
+        .join('');
+    }
+
+    // Select Gift
+    function selectGift(name) {
+      state.selectedGift = name;
+      document.querySelectorAll('.gift-card').forEach((card) => {
+        card.classList.remove('selected');
+      });
+      event.target.closest('.gift-card').classList.add('selected');
+      updateGiftSummary();
+    }
+
+    // Update Gift Summary
+    function updateGiftSummary() {
+      const username = document.getElementById('giftUsername').value.trim().replace('@', '');
+      if (state.selectedGift && username) {
+        document.getElementById('giftsSummary').style.display = 'block';
+        document.getElementById('summaryGiftUser').textContent = `@${username}`;
+        document.getElementById('summaryGiftName').textContent = state.gifts[state.selectedGift];
+        document.getElementById('sendGiftBtn').disabled = state.balance < state.giftPrice;
+      } else {
+        document.getElementById('giftsSummary').style.display = 'none';
+        document.getElementById('sendGiftBtn').disabled = true;
+      }
+    }
+
+    // Send Gift
+    async function sendGift() {
+      const username = document.getElementById('giftUsername').value.trim().replace('@', '');
+      if (!state.selectedGift || !username) return;
+
+      if (state.balance < state.giftPrice) {
+        showAlert('Недостаточно средств', 'error');
+        return;
+      }
+
+      document.getElementById('sendGiftBtn').disabled = true;
+      showAlert('Отправка подарка...', 'info');
+
+      try {
+        const response = await fetch('/api/bot/send-gift', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            telegram_id: state.userId,
+            target_username: username,
+            gift_name: state.selectedGift,
+          }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          showAlert(`✅ Подарок отправлен @${username}!`, 'success');
+          await loadBalance();
+          state.selectedGift = null;
+          document.getElementById('giftUsername').value = '';
+          renderGifts();
+          document.getElementById('giftsSummary').style.display = 'none';
+          await loadHistory();
+        } else {
+          showAlert(data.error || 'Ошибка отправки', 'error');
+        }
+      } catch (e) {
+        showAlert('Ошибка: ' + e.message, 'error');
+      }
+
+      document.getElementById('sendGiftBtn').disabled = false;
+    }
+
+    // Load History
+    async function loadHistory() {
+      const historyList = document.getElementById('historyList');
+      const loading = document.getElementById('historyLoading');
+
+      loading.classList.add('active');
+      historyList.innerHTML = '';
+
+      try {
+        const response = await fetch(`/api/bot/transactions?telegram_id=${state.userId}&limit=10`);
+        const data = await response.json();
+
+        loading.classList.remove('active');
+
+        if (data.success && data.data.length > 0) {
+          historyList.innerHTML = data.data
+            .map(
+              (tx) => `
+            <div style="padding: 12px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: 600; color: var(--tg-theme-text-color);">${tx.type === 'debit' ? '📤' : '📥'} ${tx.description || tx.type}</div>
+                <div style="font-size: 11px; color: var(--tg-theme-hint-color); margin-top: 4px;">${new Date(tx.created_at).toLocaleString('ru-RU')}</div>
+              </div>
+              <div style="text-align: right; font-weight: 700; color: ${tx.type === 'debit' ? '#ef4444' : '#10b981'};">
+                ${tx.type === 'debit' ? '-' : '+'} ${tx.amount.toLocaleString()} сум
+              </div>
+            </div>
+          `
+            )
+            .join('');
+        } else {
+          historyList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--tg-theme-hint-color);">История пуста</div>';
+        }
+      } catch (e) {
+        loading.classList.remove('active');
+        historyList.innerHTML = '<div style="color: var(--danger);">Ошибка загрузки истории</div>';
+      }
+    }
+
+    // Switch Tab
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach((tab) => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-content').forEach((content) => {
+        content.classList.remove('active');
+      });
+
+      event.target.classList.add('active');
+      document.getElementById(name).classList.add('active');
+
+      if (name === 'history') {
+        loadHistory();
+      }
+    }
+
+    // Show Alert
+    function showAlert(message, type = 'info') {
+      const alert = document.getElementById('alert');
+      alert.textContent = message;
+      alert.className = `alert active alert-${type}`;
+      setTimeout(() => {
+        alert.classList.remove('active');
+      }, 3000);
+    }
+
+    // Init on load
+    window.addEventListener('load', init);
+  </script>
+</body>
+</html>
