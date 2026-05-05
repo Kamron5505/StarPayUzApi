@@ -59,6 +59,7 @@ const getOrCreateBotUser = async (req, res, next) => {
 
 /**
  * GET /api/bot/user/:telegram_id/balance
+ */
 const getBotUserBalance = async (req, res, next) => {
   try {
     // Support both GET and POST
@@ -212,32 +213,6 @@ const buyStars = async (req, res, next) => {
         data: {
           balance_uzs_refunded: botUser.balance_uzs,
         },
-      });
-    }
-  } catch (err) {
-    next(err);
-  }
-};
-          price_uzs: price,
-          balance_uzs_remaining: botUser.balance_uzs,
-          order_id: order._id,
-          external_id: result.external_id,
-        },
-      });
-    } else {
-      // Rollback
-      botUser.balance_uzs += price;
-      botUser.total_spent_uzs -= price;
-      await botUser.save();
-
-      order.status = 'failed';
-      order.error_message = result.error;
-      await order.save();
-
-      return res.status(502).json({
-        success: false,
-        error: 'Failed to send stars. Your balance has been refunded.',
-        data: { order_id: order._id },
       });
     }
   } catch (err) {

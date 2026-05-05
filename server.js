@@ -38,9 +38,6 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// Static files (web interface)
-app.use(express.static(path.join(__dirname, 'public')));
-
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.json({
@@ -78,7 +75,7 @@ app.use((err, req, res, next) => {
   if (err.name === 'CastError') {
     return res.status(400).json({ success: false, error: 'Invalid ID format.' });
   }
-x
+
   return res.status(500).json({
     success: false,
     error: process.env.NODE_ENV === 'production' ? 'Internal server error.' : err.message,
