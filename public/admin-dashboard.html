@@ -639,28 +639,35 @@
         const orderType = order.type === 'premium' ? '💎 Premium' : order.type === 'gift' ? '🎁 Gift' : '⭐ Stars';
         const amount = order.amount || 0;
         
-        // Calculate revenue (assuming price is stored or we use default)
+        // Only calculate profit if status is success
         let revenue = 0;
-        if (order.type === 'stars') {
-          // Assume 195 UZS per star
-          revenue = amount * 195;
-        } else if (order.type === 'premium') {
-          // Premium prices
-          revenue = amount; // amount is already in UZS
-        } else if (order.type === 'gift') {
-          revenue = amount;
+        let totalCost = 0;
+        let commission = 0;
+        let netProfit = 0;
+
+        if (order.status === 'success') {
+          // Calculate revenue (assuming price is stored or we use default)
+          if (order.type === 'stars') {
+            // Assume 195 UZS per star
+            revenue = amount * 195;
+          } else if (order.type === 'premium') {
+            // Premium prices
+            revenue = amount; // amount is already in UZS
+          } else if (order.type === 'gift') {
+            revenue = amount;
+          }
+
+          // Calculate cost (TON to UZS)
+          const tonPerUnit = 0.01; // Approximate
+          const costPerUnit = tonPerUnit * tonUzsRate;
+          totalCost = amount * costPerUnit;
+
+          // Calculate commission
+          commission = revenue * (fragmentFee / 100);
+
+          // Calculate net profit
+          netProfit = revenue - totalCost - commission;
         }
-
-        // Calculate cost (TON to UZS)
-        const tonPerUnit = 0.01; // Approximate
-        const costPerUnit = tonPerUnit * tonUzsRate;
-        const totalCost = amount * costPerUnit;
-
-        // Calculate commission
-        const commission = revenue * (fragmentFee / 100);
-
-        // Calculate net profit
-        const netProfit = revenue - totalCost - commission;
 
         const statusColor = order.status === 'success' ? '#22c55e' : order.status === 'pending' ? '#f59e0b' : '#ef4444';
         const statusText = order.status === 'success' ? '✅ Success' : order.status === 'pending' ? '⏳ Pending' : '❌ Failed';
@@ -669,9 +676,9 @@
         html += `<td style="padding: 12px; font-family: monospace; font-size: 12px;">${order._id?.slice(-8) || 'N/A'}</td>`;
         html += `<td style="padding: 12px;">${orderType}</td>`;
         html += `<td style="padding: 12px; text-align: right;">${amount.toLocaleString()}</td>`;
-        html += `<td style="padding: 12px; text-align: right; color: #fbbf24; font-weight: 600;">${revenue.toLocaleString('uz-UZ', { maximumFractionDigits: 0 })}</td>`;
-        html += `<td style="padding: 12px; text-align: right; color: #94a3b8;">${totalCost.toLocaleString('uz-UZ', { maximumFractionDigits: 0 })}</td>`;
-        html += `<td style="padding: 12px; text-align: right; color: #22c55e; font-weight: 700; font-size: 14px;">${netProfit.toLocaleString('uz-UZ', { maximumFractionDigits: 0 })}</td>`;
+        html += `<td style="padding: 12px; text-align: right; color: ${order.status === 'success' ? '#fbbf24' : '#64748b'}; font-weight: ${order.status === 'success' ? '600' : '400'};">${revenue.toLocaleString('uz-UZ', { maximumFractionDigits: 0 })}</td>`;
+        html += `<td style="padding: 12px; text-align: right; color: ${order.status === 'success' ? '#94a3b8' : '#64748b'};">${totalCost.toLocaleString('uz-UZ', { maximumFractionDigits: 0 })}</td>`;
+        html += `<td style="padding: 12px; text-align: right; color: ${order.status === 'success' ? '#22c55e' : '#64748b'}; font-weight: 700; font-size: 14px;">${netProfit.toLocaleString('uz-UZ', { maximumFractionDigits: 0 })}</td>`;
         html += `<td style="padding: 12px; color: ${statusColor};">${statusText}</td>`;
         html += '</tr>';
       });
