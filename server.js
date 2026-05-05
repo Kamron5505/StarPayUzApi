@@ -38,16 +38,15 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// ── Routes ────────────────────────────────────────────────────────────────────
+// Static files (web interface)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve index.html for root path
 app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    service: 'Telegram Stars API',
-    version: '1.0.0',
-    docs: 'See README.md or examples/requests.md for usage.',
-  });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/admin', adminRoutes);
 app.use('/api/bot', botRoutes);
 app.use('/api/click', clickRoutes);
