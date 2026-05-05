@@ -7,7 +7,7 @@
 const axios = require('axios');
 
 const API_URL = process.env.API_URL || 'http://localhost:3000';
-const API_KEY = process.env.X_API_KEY || 'b0ece50cc163419dbcc52f5fa15b053c';
+const API_KEY = process.env.X_API_KEY || '441ff218557d431c8e05c6e3ff761fb8';
 const ADMIN_SECRET = process.env.X_ADMIN_SECRET || 'kama5505';
 
 const api = axios.create({
@@ -67,17 +67,30 @@ async function runTests() {
   })) passed++; else failed++;
 
   // Test 3: Get balance
-  if (await test('Get Bot User Balance', async () => {
-    const res = await api.get(`/api/bot/user/${userId}/balance`);
+  if (await test('Get Balance', async () => {
+    const res = await api.get('/api/balance', {
+      headers: { 'X-API-Key': API_KEY }
+    });
     if (!res.data.success) throw new Error('Get balance failed');
-    log('yellow', `  Balance: ${res.data.data.balance_uzs} UZS`);
+    log('yellow', `  Balance: ${res.data.data.balance} UZS`);
   })) passed++; else failed++;
 
-  // Test 4: Get prices
-  if (await test('Get Star Prices', async () => {
-    const res = await api.get('/api/bot/prices');
-    if (!res.data.success) throw new Error('Get prices failed');
-    log('yellow', `  Packages: ${res.data.data.packages.length}`);
+  // Test 4: Get Stars Pricing
+  if (await test('Get Stars Pricing', async () => {
+    const res = await api.post('/api/stars/pricing', {}, {
+      headers: { 'X-API-Key': API_KEY }
+    });
+    if (!res.data.success) throw new Error('Get stars pricing failed');
+    log('yellow', `  Packages: ${Object.keys(res.data.data).length}`);
+  })) passed++; else failed++;
+
+  // Test 5: Get Wallet Balance
+  if (await test('Get Wallet Balance', async () => {
+    const res = await api.get('/api/stars/wallet-balance', {
+      headers: { 'X-API-Key': API_KEY }
+    });
+    if (!res.data.success) throw new Error('Get wallet balance failed');
+    log('yellow', `  Wallet Status: ${res.data.data.status}`);
   })) passed++; else failed++;
 
   // Test 5: Admin broadcast (requires admin secret)
