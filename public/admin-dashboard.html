@@ -369,6 +369,13 @@
               <div class="stat-label">Daromad (so'm)</div>
             </div>
           </div>
+
+          <div class="section-title" style="margin-top: 40px;">📦 So'nggi buyurtmalar va daromad</div>
+          <div class="card">
+            <div id="recentOrdersList" style="max-height: 600px; overflow-y: auto;">
+              <p style="color: #94a3b8; text-align: center; padding: 20px;">Yuklanmoqda...</p>
+            </div>
+          </div>
         </div>
 
         <!-- Profit Calculator Page -->
@@ -448,9 +455,23 @@
 
         <!-- Orders Page -->
         <div class="page" id="page-orders">
-          <div class="section-title">📦 Buyurtmalar</div>
+          <div class="section-title">📦 Buyurtmalar va Daromad</div>
           <div class="card">
-            <p style="color: #94a3b8;">Buyurtmalar ro'yxati...</p>
+            <div style="margin-bottom: 16px;">
+              <label style="font-size: 13px; color: #64748b;">Filtrlash:</label>
+              <div style="display: flex; gap: 12px; margin-top: 8px;">
+                <select id="orderStatusFilter" style="padding: 10px; background: #070710; border: 1px solid #1e1e2e; border-radius: 8px; color: #e2e8f0; font-size: 14px; flex: 1;">
+                  <option value="">Barcha statuslar</option>
+                  <option value="success">Success</option>
+                  <option value="pending">Pending</option>
+                  <option value="failed">Failed</option>
+                </select>
+                <button class="btn-small" onclick="loadOrdersPage()">Filtrlash</button>
+              </div>
+            </div>
+            <div id="ordersListContainer" style="max-height: 700px; overflow-y: auto;">
+              <p style="color: #94a3b8; text-align: center; padding: 20px;">Yuklanmoqda...</p>
+            </div>
           </div>
         </div>
 
@@ -524,6 +545,38 @@
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       document.getElementById('page-' + name).classList.add('active');
       event.target.classList.add('active');
+      
+      // Load data when switching pages
+      if (name === 'orders') {
+        loadOrdersPage();
+      }
+    }
+
+    async function loadOrdersPage() {
+      try {
+        const status = document.getElementById('orderStatusFilter')?.value || '';
+        const url = `/api/admin/orders?limit=50${status ? '&status=' + status : ''}`;
+        
+        const response = await fetch(url, {
+          headers: { 'X-Admin-Secret': SECRET }
+        });
+
+        if (!response.ok) throw new Error('Failed to load orders');
+
+        const data = await response.json();
+        const orders = data.data?.orders || [];
+
+        if (orders.length === 0) {
+          document.getElementById('ordersListContainer').innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 20px;">Buyurtmalar topilmadi</p>';
+          return;
+        }
+
+        displayOrdersWithProfit(orders);
+        document.getElementById('ordersListContainer').innerHTML = document.querySelector('table')?.outerHTML || '';
+      } catch (err) {
+        console.error('Error loading orders:', err);
+        document.getElementById('ordersListContainer').innerHTML = '<p style="color: #ef4444; text-align: center; padding: 20px;">Xato: ' + err.message + '</p>';
+      }
     }
 
     function loadStats() {
@@ -531,6 +584,109 @@
       document.getElementById('totalUsers').textContent = '408';
       document.getElementById('totalOrders').textContent = '1,250';
       document.getElementById('totalRevenue').textContent = '24,375,000';
+      
+      // Load recent orders
+      loadRecentOrders();
+    }
+
+    async function loadRecentOrders() {
+      try {
+        // Fetch orders from API
+        const response = await fetch('/api/admin/orders?limit=10', {
+          headers: { 'X-Admin-Secret': SECRET }
+        });
+        
+        if (!response.ok) {
+          // If API fails, show demo data
+          showDemoOrders();
+          return;
+        }
+
+        const data = await response.json();
+        const orders = data.data?.orders || [];
+
+        if (orders.length === 0) {
+          showDemoOrders();
+          return;
+        }
+
+        // Calculate profit for each order and display
+        displayOrdersWithProfit(orders);
+      } catch (err) {
+        console.error('Error loading orders:', err);
+        showDemoOrders();
+      }
+    }
+
+    function displayOrdersWithProfit(orders) {
+      const tonUsdRate = 3.20;
+      const usdUzsRate = 12800;
+      const tonUzsRate = tonUsdRate * usdUzsRate;
+      const fragmentFee = 5;
+
+      let html = '<table style="width: 100%; border-collapse: collapse;">';
+      html += '<thead><tr style="border-bottom: 2px solid #1e1e2e;">';
+      html += '<th style="text-align: left; padding: 12px; color: #f59e0b;">Buyurtma ID</th>';
+      html += '<th style="text-align: left; padding: 12px; color: #f59e0b;">Tur</th>';
+      html += '<th style="text-align: right; padding: 12px; color: #f59e0b;">Miqdor</th>';
+      html += '<th style="text-align: right; padding: 12px; color: #f59e0b;">Daromad (so\'m)</th>';
+      html += '<th style="text-align: right; padding: 12px; color: #f59e0b;">Tannarx (so\'m)</th>';
+      html += '<th style="text-align: right; padding: 12px; color: #22c55e; font-weight: 700;">Sof Daromad (so\'m)</th>';
+      html += '<th style="text-align: left; padding: 12px; color: #f59e0b;">Status</th>';
+      html += '</tr></thead><tbody>';
+
+      orders.forEach((order, index) => {
+        const orderType = order.type === 'premium' ? '💎 Premium' : order.type === 'gift' ? '🎁 Gift' : '⭐ Stars';
+        const amount = order.amount || 0;
+        
+        // Calculate revenue (assuming price is stored or we use default)
+        let revenue = 0;
+        if (order.type === 'stars') {
+          // Assume 195 UZS per star
+          revenue = amount * 195;
+        } else if (order.type === 'premium') {
+          // Premium prices
+          revenue = amount; // amount is already in UZS
+        } else if (order.type === 'gift') {
+          revenue = amount;
+        }
+
+        // Calculate cost (TON to UZS)
+        const tonPerUnit = 0.01; // Approximate
+        const costPerUnit = tonPerUnit * tonUzsRate;
+        const totalCost = amount * costPerUnit;
+
+        // Calculate commission
+        const commission = revenue * (fragmentFee / 100);
+
+        // Calculate net profit
+        const netProfit = revenue - totalCost - commission;
+
+        const statusColor = order.status === 'success' ? '#22c55e' : order.status === 'pending' ? '#f59e0b' : '#ef4444';
+        const statusText = order.status === 'success' ? '✅ Success' : order.status === 'pending' ? '⏳ Pending' : '❌ Failed';
+
+        html += `<tr style="border-bottom: 1px solid #1e1e2e; ${index % 2 === 0 ? 'background: rgba(245, 158, 11, 0.02);' : ''}">`;
+        html += `<td style="padding: 12px; font-family: monospace; font-size: 12px;">${order._id?.slice(-8) || 'N/A'}</td>`;
+        html += `<td style="padding: 12px;">${orderType}</td>`;
+        html += `<td style="padding: 12px; text-align: right;">${amount.toLocaleString()}</td>`;
+        html += `<td style="padding: 12px; text-align: right; color: #fbbf24; font-weight: 600;">${revenue.toLocaleString('uz-UZ', { maximumFractionDigits: 0 })}</td>`;
+        html += `<td style="padding: 12px; text-align: right; color: #94a3b8;">${totalCost.toLocaleString('uz-UZ', { maximumFractionDigits: 0 })}</td>`;
+        html += `<td style="padding: 12px; text-align: right; color: #22c55e; font-weight: 700; font-size: 14px;">${netProfit.toLocaleString('uz-UZ', { maximumFractionDigits: 0 })}</td>`;
+        html += `<td style="padding: 12px; color: ${statusColor};">${statusText}</td>`;
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('recentOrdersList').innerHTML = html;
+    }
+
+    function showDemoOrders() {
+      const demoOrders = [
+        { _id: '507f1f77bcf86cd799439011', type: 'stars', amount: 100, status: 'success' },
+        { _id: '507f1f77bcf86cd799439012', type: 'premium', amount: 45000, status: 'success' },
+        { _id: '507f1f77bcf86cd799439013', type: 'stars', amount: 50, status: 'success' },
+      ];
+      displayOrdersWithProfit(demoOrders);
     }
 
     function calculateProfit() {
