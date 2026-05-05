@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StarPay Admin Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0a0f;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    .login-page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .login-box {
+      background: #0f0f1a;
+      border: 1px solid #1e1e2e;
+      border-radius: 16px;
+      padding: 40px;
+      width: 360px;
+    }
+
+    .login-box h2 {
+      font-size: 24px;
+      margin-bottom: 24px;
+      text-align: center;
+      background: linear-gradient(135deg, #f59e0b, #f97316);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      background: #070710;
+      border: 1px solid #1e1e2e;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 14px;
+      margin-bottom: 12px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #f59e0b;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #f59e0b, #f97316);
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+    }
+
+    .error {
+      color: #ef4444;
+      font-size: 13px;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .dashboard {
+      display: none;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      border-bottom: 1px solid #1e1e2e;
+      background: #0f0f1a;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: #f59e0b;
+    }
+
+    .logout-btn {
+      background: none;
+      border: 1px solid #2d2d3e;
+      color: #94a3b8;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .logout-btn:hover {
+      background: #1e1e2e;
+      color: #e2e8f0;
+    }
+
+    .layout {
+      display: flex;
+      min-height: calc(100vh - 57px);
+    }
+
+    nav {
+      width: 220px;
+      background: #0f0f1a;
+      border-right: 1px solid #1e1e2e;
+      padding: 20px 0;
+      flex-shrink: 0;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #94a3b8;
+      transition: all 0.2s;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: #1e1e2e;
+      color: #f59e0b;
+    }
+
+    main {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #f59e0b;
+    }
+
+    .card {
+      background: #0f0f1a;
+      border: 1px solid #1e1e2e;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      background: #070710;
+      border: 1px solid #1e1e2e;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #f59e0b;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .result-box {
+      background: rgba(245, 158, 11, 0.05);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(245, 158, 11, 0.1);
+      font-size: 14px;
+    }
+
+    .result-item:last-child {
+      border-bottom: none;
+    }
+
+    .result-label {
+      color: #94a3b8;
+    }
+
+    .result-value {
+      color: #fbbf24;
+      font-weight: 700;
+      font-family: monospace;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: #0f0f1a;
+      border: 1px solid #1e1e2e;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: #f59e0b;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .btn-small {
+      padding: 10px 16px;
+      background: linear-gradient(135deg, #f59e0b, #f97316);
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-small:hover {
+      transform: translateY(-2px);
+    }
+
+    .success {
+      color: #22c55e;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .layout {
+        flex-direction: column;
+      }
+
+      nav {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 8px;
+        border-right: none;
+        border-bottom: 1px solid #1e1e2e;
+      }
+
+      .nav-item {
+        padding: 8px 12px;
+        font-size: 12px;
+        flex: 1;
+        min-width: 80px;
+        text-align: center;
+      }
+
+      main {
+        padding: 16px;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Page -->
+  <div class="login-page" id="loginPage">
+    <div class="login-box">
+      <h2>👑 Admin Panel</h2>
+      <input type="password" id="adminSecret" placeholder="Admin Secret" onkeydown="if(event.key==='Enter')login()">
+      <div id="loginError" class="error"></div>
+      <button class="btn" onclick="login()">Kirish</button>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="dashboard" id="dashboard">
+    <header>
+      <div class="logo">⭐ StarPay Admin</div>
+      <button class="logout-btn" onclick="logout()">Chiqish</button>
+    </header>
+
+    <div class="layout">
+      <nav>
+        <div class="nav-item active" onclick="showPage('overview')">📊 Statistika</div>
+        <div class="nav-item" onclick="showPage('profit')">💰 Daromad</div>
+        <div class="nav-item" onclick="showPage('users')">👥 Foydalanuvchilar</div>
+        <div class="nav-item" onclick="showPage('orders')">📦 Buyurtmalar</div>
+        <div class="nav-item" onclick="showPage('calculator')">🧮 Kalkulyator</div>
+      </nav>
+
+      <main>
+        <!-- Overview Page -->
+        <div class="page active" id="page-overview">
+          <div class="section-title">📊 Statistika</div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="totalUsers">0</div>
+              <div class="stat-label">Foydalanuvchilar</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="totalOrders">0</div>
+              <div class="stat-label">Buyurtmalar</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="totalRevenue">0</div>
+              <div class="stat-label">Daromad (so'm)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profit Calculator Page -->
+        <div class="page" id="page-profit">
+          <div class="section-title">💰 Daromad Kalkulyatori</div>
+          
+          <div class="card">
+            <h3 style="margin-bottom: 16px; font-size: 16px;">⭐ Stars Sotish Daromadi</h3>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Sotilgan Stars soni</label>
+                <input type="number" id="starsSold" placeholder="100" value="100" oninput="calculateProfit()">
+              </div>
+              <div class="form-group">
+                <label>Narx (so'm/star)</label>
+                <input type="number" id="starPrice" placeholder="195" value="195" oninput="calculateProfit()">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>TON/USD kurs</label>
+                <input type="number" id="tonUsdRate" placeholder="3.20" value="3.20" step="0.01" oninput="calculateProfit()">
+              </div>
+              <div class="form-group">
+                <label>USD/UZS kurs</label>
+                <input type="number" id="usdUzsRate" placeholder="12800" value="12800" oninput="calculateProfit()">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Fragment komissiya (%)</label>
+              <input type="number" id="fragmentFee" placeholder="5" value="5" step="0.1" oninput="calculateProfit()">
+            </div>
+
+            <div class="result-box">
+              <div class="result-item">
+                <span class="result-label">📊 Jami daromad (so'm):</span>
+                <span class="result-value" id="totalRevenue2">0</span>
+              </div>
+              <div class="result-item">
+                <span class="result-label">⭐ Stars soni:</span>
+                <span class="result-value" id="starsCount">0</span>
+              </div>
+              <div class="result-item">
+                <span class="result-label">💵 TON narxi (USD):</span>
+                <span class="result-value" id="tonPrice">0</span>
+              </div>
+              <div class="result-item">
+                <span class="result-label">🔄 TON/UZS kurs:</span>
+                <span class="result-value" id="tonUzsRate">0</span>
+              </div>
+              <div class="result-item">
+                <span class="result-label">💰 Tannarx (so'm/star):</span>
+                <span class="result-value" id="costPerStar">0</span>
+              </div>
+              <div class="result-item">
+                <span class="result-label">📉 Jami tannarx (so'm):</span>
+                <span class="result-value" id="totalCost">0</span>
+              </div>
+              <div class="result-item" style="border-top: 2px solid rgba(245, 158, 11, 0.3); padding-top: 12px; margin-top: 12px;">
+                <span class="result-label" style="font-weight: 700; font-size: 15px;">✅ Sof daromad (so'm):</span>
+                <span class="result-value" style="font-size: 18px;" id="netProfit">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Users Page -->
+        <div class="page" id="page-users">
+          <div class="section-title">👥 Foydalanuvchilar</div>
+          <div class="card">
+            <p style="color: #94a3b8;">Foydalanuvchilar ro'yxati...</p>
+          </div>
+        </div>
+
+        <!-- Orders Page -->
+        <div class="page" id="page-orders">
+          <div class="section-title">📦 Buyurtmalar</div>
+          <div class="card">
+            <p style="color: #94a3b8;">Buyurtmalar ro'yxati...</p>
+          </div>
+        </div>
+
+        <!-- Calculator Page -->
+        <div class="page" id="page-calculator">
+          <div class="section-title">🧮 Qo'shimcha Kalkulyator</div>
+          <div class="card">
+            <h3 style="margin-bottom: 16px; font-size: 16px;">TON → UZS Konvertori</h3>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>TON miqdori</label>
+                <input type="number" id="tonAmount" placeholder="1.0" value="1.0" step="0.01" oninput="convertTon()">
+              </div>
+              <div class="form-group">
+                <label>TON/USD kurs</label>
+                <input type="number" id="tonUsdRate2" placeholder="3.20" value="3.20" step="0.01" oninput="convertTon()">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>USD/UZS kurs</label>
+              <input type="number" id="usdUzsRate2" placeholder="12800" value="12800" oninput="convertTon()">
+            </div>
+
+            <div class="result-box">
+              <div class="result-item">
+                <span class="result-label">💵 USD miqdori:</span>
+                <span class="result-value" id="usdAmount">0</span>
+              </div>
+              <div class="result-item">
+                <span class="result-label">💰 UZS miqdori:</span>
+                <span class="result-value" id="uzsAmount">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    let SECRET = '';
+
+    function login() {
+      const secret = document.getElementById('adminSecret').value.trim();
+      if (!secret) return;
+
+      // Verify secret (in real app, this would be verified on server)
+      if (secret === 'kama5505') {
+        SECRET = secret;
+        document.getElementById('loginPage').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        loadStats();
+        calculateProfit();
+      } else {
+        document.getElementById('loginError').textContent = 'Noto\'g\'ri parol!';
+      }
+    }
+
+    function logout() {
+      SECRET = '';
+      document.getElementById('loginPage').style.display = 'flex';
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('adminSecret').value = '';
+      document.getElementById('loginError').textContent = '';
+    }
+
+    function showPage(name) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function loadStats() {
+      // Placeholder stats
+      document.getElementById('totalUsers').textContent = '408';
+      document.getElementById('totalOrders').textContent = '1,250';
+      document.getElementById('totalRevenue').textContent = '24,375,000';
+    }
+
+    function calculateProfit() {
+      const starsSold = parseFloat(document.getElementById('starsSold').value) || 0;
+      const starPrice = parseFloat(document.getElementById('starPrice').value) || 0;
+      const tonUsdRate = parseFloat(document.getElementById('tonUsdRate').value) || 0;
+      const usdUzsRate = parseFloat(document.getElementById('usdUzsRate').value) || 0;
+      const fragmentFee = parseFloat(document.getElementById('fragmentFee').value) || 0;
+
+      // Calculate total revenue
+      const totalRevenue = starsSold * starPrice;
+
+      // Calculate TON/UZS rate
+      const tonUzsRate = tonUsdRate * usdUzsRate;
+
+      // Calculate cost per star (in TON, then convert to UZS)
+      // Assuming 1 star = 0.01 TON (approximate)
+      const tonPerStar = 0.01;
+      const costPerStarUzs = tonPerStar * tonUzsRate;
+
+      // Calculate total cost
+      const totalCost = starsSold * costPerStarUzs;
+
+      // Calculate Fragment fee
+      const fragmentFeeAmount = totalRevenue * (fragmentFee / 100);
+
+      // Calculate net profit
+      const netProfit = totalRevenue - totalCost - fragmentFeeAmount;
+
+      // Update display
+      document.getElementById('totalRevenue2').textContent = totalRevenue.toLocaleString('uz-UZ', { maximumFractionDigits: 0 });
+      document.getElementById('starsCount').textContent = starsSold.toLocaleString();
+      document.getElementById('tonPrice').textContent = tonUsdRate.toFixed(2);
+      document.getElementById('tonUzsRate').textContent = tonUzsRate.toLocaleString('uz-UZ', { maximumFractionDigits: 0 });
+      document.getElementById('costPerStar').textContent = costPerStarUzs.toLocaleString('uz-UZ', { maximumFractionDigits: 0 });
+      document.getElementById('totalCost').textContent = totalCost.toLocaleString('uz-UZ', { maximumFractionDigits: 0 });
+      document.getElementById('netProfit').textContent = netProfit.toLocaleString('uz-UZ', { maximumFractionDigits: 0 }) + ' so\'m';
+    }
+
+    function convertTon() {
+      const tonAmount = parseFloat(document.getElementById('tonAmount').value) || 0;
+      const tonUsdRate = parseFloat(document.getElementById('tonUsdRate2').value) || 0;
+      const usdUzsRate = parseFloat(document.getElementById('usdUzsRate2').value) || 0;
+
+      const usdAmount = tonAmount * tonUsdRate;
+      const uzsAmount = usdAmount * usdUzsRate;
+
+      document.getElementById('usdAmount').textContent = usdAmount.toFixed(2) + ' USD';
+      document.getElementById('uzsAmount').textContent = uzsAmount.toLocaleString('uz-UZ', { maximumFractionDigits: 0 }) + ' so\'m';
+    }
+
+    // Auto-focus on password field
+    document.getElementById('adminSecret').focus();
+  </script>
+</body>
+</html>

@@ -46,6 +46,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Serve HTML files
+app.get('*.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', req.path));
+});
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/admin', adminRoutes);
 app.use('/api/bot', botRoutes);
