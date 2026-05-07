@@ -346,6 +346,7 @@
       <nav>
         <div class="nav-item active" onclick="showPage('overview')">📊 Statistika</div>
         <div class="nav-item" onclick="showPage('profit')">💰 Daromad</div>
+        <div class="nav-item" onclick="showPage('balance')">💳 Balans</div>
         <div class="nav-item" onclick="showPage('users')">👥 Foydalanuvchilar</div>
         <div class="nav-item" onclick="showPage('orders')">📦 Buyurtmalar</div>
         <div class="nav-item" onclick="showPage('calculator')">🧮 Kalkulyator</div>
@@ -445,11 +446,56 @@
           </div>
         </div>
 
-        <!-- Users Page -->
-        <div class="page" id="page-users">
-          <div class="section-title">👥 Foydalanuvchilar</div>
+        <!-- Balance Management Page -->
+        <div class="page" id="page-balance">
+          <div class="section-title">💳 Foydalanuvchi Balansini Boshqarish</div>
+          
           <div class="card">
-            <p style="color: #94a3b8;">Foydalanuvchilar ro'yxati...</p>
+            <h3 style="margin-bottom: 16px; font-size: 16px;">➕ Balans Qo'shish</h3>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Telegram ID yoki Username</label>
+                <input type="text" id="addBalanceUser" placeholder="123456789 yoki @username">
+              </div>
+              <div class="form-group">
+                <label>Qo'shish miqdori (so'm)</label>
+                <input type="number" id="addBalanceAmount" placeholder="10000">
+              </div>
+            </div>
+
+            <button class="btn-small" onclick="addBalance()" style="background: linear-gradient(135deg, #22c55e, #16a34a);">➕ Qo'shish</button>
+            <div id="addBalanceResult" style="margin-top: 12px; font-size: 13px;"></div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-bottom: 16px; font-size: 16px;">➖ Balans Yechib Olish</h3>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Telegram ID yoki Username</label>
+                <input type="text" id="deductBalanceUser" placeholder="123456789 yoki @username">
+              </div>
+              <div class="form-group">
+                <label>Yechib olish miqdori (so'm)</label>
+                <input type="number" id="deductBalanceAmount" placeholder="10000">
+              </div>
+            </div>
+
+            <button class="btn-small" onclick="deductBalance()" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">➖ Yechib olish</button>
+            <div id="deductBalanceResult" style="margin-top: 12px; font-size: 13px;"></div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-bottom: 16px; font-size: 16px;">🔍 Balansni Ko'rish</h3>
+            
+            <div class="form-group">
+              <label>Telegram ID yoki Username</label>
+              <input type="text" id="checkBalanceUser" placeholder="123456789 yoki @username">
+            </div>
+
+            <button class="btn-small" onclick="checkBalance()">🔍 Ko'rish</button>
+            <div id="checkBalanceResult" style="margin-top: 12px; font-size: 13px;"></div>
           </div>
         </div>
 
@@ -580,10 +626,10 @@
     }
 
     function loadStats() {
-      // Placeholder stats
-      document.getElementById('totalUsers').textContent = '408';
-      document.getElementById('totalOrders').textContent = '1,250';
-      document.getElementById('totalRevenue').textContent = '24,375,000';
+      // Placeholder stats - RESET TO 0
+      document.getElementById('totalUsers').textContent = '0';
+      document.getElementById('totalOrders').textContent = '0';
+      document.getElementById('totalRevenue').textContent = '0';
       
       // Load recent orders
       loadRecentOrders();
@@ -591,8 +637,8 @@
 
     async function loadRecentOrders() {
       try {
-        // Fetch orders from API
-        const response = await fetch('/api/admin/orders?limit=10', {
+        // Fetch orders from API - ONLY SUCCESS ORDERS
+        const response = await fetch('/api/admin/orders?limit=50&status=success', {
           headers: { 'X-Admin-Secret': SECRET }
         });
         
@@ -612,10 +658,46 @@
 
         // Calculate profit for each order and display
         displayOrdersWithProfit(orders);
+        
+        // Calculate total revenue from success orders only
+        calculateTotalRevenue(orders);
       } catch (err) {
         console.error('Error loading orders:', err);
         showDemoOrders();
       }
+    }
+
+    function calculateTotalRevenue(orders) {
+      const tonUsdRate = 3.20;
+      const usdUzsRate = 12800;
+      const tonUzsRate = tonUsdRate * usdUzsRate;
+      const fragmentFee = 5;
+
+      let totalRevenue = 0;
+
+      orders.forEach((order) => {
+        // Only count success orders
+        if (order.status !== 'success') return;
+
+        let revenue = 0;
+        if (order.type === 'stars') {
+          revenue = order.amount * 195;
+        } else if (order.type === 'premium') {
+          revenue = order.amount;
+        } else if (order.type === 'gift') {
+          revenue = order.amount;
+        }
+
+        const tonPerUnit = 0.01;
+        const costPerUnit = tonPerUnit * tonUzsRate;
+        const totalCost = order.amount * costPerUnit;
+        const commission = revenue * (fragmentFee / 100);
+        const netProfit = revenue - totalCost - commission;
+
+        totalRevenue += netProfit;
+      });
+
+      document.getElementById('totalRevenue').textContent = totalRevenue.toLocaleString('uz-UZ', { maximumFractionDigits: 0 });
     }
 
     function displayOrdersWithProfit(orders) {
@@ -745,8 +827,106 @@
       document.getElementById('uzsAmount').textContent = uzsAmount.toLocaleString('uz-UZ', { maximumFractionDigits: 0 }) + ' so\'m';
     }
 
-    // Auto-focus on password field
-    document.getElementById('adminSecret').focus();
+    async function addBalance() {
+      const user = document.getElementById('addBalanceUser').value.trim();
+      const amount = parseInt(document.getElementById('addBalanceAmount').value);
+      
+      if (!user || !amount) {
+        document.getElementById('addBalanceResult').innerHTML = '<span style="color: #ef4444;">❌ Barcha maydonlarni to\'ldiring</span>';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin/topup', {
+          method: 'POST',
+          headers: {
+            'X-Admin-Secret': SECRET,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            [isNaN(user) ? 'username' : 'telegram_id']: user,
+            amount: amount
+          })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          document.getElementById('addBalanceResult').innerHTML = `<span style="color: #22c55e;">✅ ${data.message}<br>Yangi balans: ${data.data?.balance_after?.toLocaleString() || '—'} so'm</span>`;
+          document.getElementById('addBalanceUser').value = '';
+          document.getElementById('addBalanceAmount').value = '';
+        } else {
+          document.getElementById('addBalanceResult').innerHTML = `<span style="color: #ef4444;">❌ ${data.error}</span>`;
+        }
+      } catch (err) {
+        document.getElementById('addBalanceResult').innerHTML = `<span style="color: #ef4444;">❌ Xato: ${err.message}</span>`;
+      }
+    }
+
+    async function deductBalance() {
+      const user = document.getElementById('deductBalanceUser').value.trim();
+      const amount = parseInt(document.getElementById('deductBalanceAmount').value);
+      
+      if (!user || !amount) {
+        document.getElementById('deductBalanceResult').innerHTML = '<span style="color: #ef4444;">❌ Barcha maydonlarni to\'ldiring</span>';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin/deduct', {
+          method: 'POST',
+          headers: {
+            'X-Admin-Secret': SECRET,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            [isNaN(user) ? 'username' : 'telegram_id']: user,
+            amount: amount
+          })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          document.getElementById('deductBalanceResult').innerHTML = `<span style="color: #22c55e;">✅ ${data.message}<br>Yangi balans: ${data.data?.balance_after?.toLocaleString() || '—'} so'm</span>`;
+          document.getElementById('deductBalanceUser').value = '';
+          document.getElementById('deductBalanceAmount').value = '';
+        } else {
+          document.getElementById('deductBalanceResult').innerHTML = `<span style="color: #ef4444;">❌ ${data.error}</span>`;
+        }
+      } catch (err) {
+        document.getElementById('deductBalanceResult').innerHTML = `<span style="color: #ef4444;">❌ Xato: ${err.message}</span>`;
+      }
+    }
+
+    async function checkBalance() {
+      const user = document.getElementById('checkBalanceUser').value.trim();
+      
+      if (!user) {
+        document.getElementById('checkBalanceResult').innerHTML = '<span style="color: #ef4444;">❌ Telegram ID yoki Username kiriting</span>';
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/bot/user/${user}/balance`, {
+          headers: { 'X-Service-Secret': 'starpay_tg_secret_2024' }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          document.getElementById('checkBalanceResult').innerHTML = `
+            <div style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px; padding: 12px;">
+              <div style="margin-bottom: 8px;"><span style="color: #94a3b8;">Telegram ID:</span> <span style="color: #fbbf24; font-weight: 700;">${data.data?.telegram_id || '—'}</span></div>
+              <div style="margin-bottom: 8px;"><span style="color: #94a3b8;">User Number:</span> <span style="color: #fbbf24; font-weight: 700;">${data.data?.user_number || '—'}</span></div>
+              <div style="margin-bottom: 8px;"><span style="color: #94a3b8;">Balans:</span> <span style="color: #22c55e; font-weight: 700; font-size: 16px;">${data.data?.balance_uzs?.toLocaleString() || '0'} so'm</span></div>
+              <div><span style="color: #94a3b8;">Jami sotib olgan:</span> <span style="color: #fbbf24; font-weight: 700;">${data.data?.total_stars_bought || '0'} ⭐</span></div>
+            </div>
+          `;
+        } else {
+          document.getElementById('checkBalanceResult').innerHTML = `<span style="color: #ef4444;">❌ ${data.error}</span>`;
+        }
+      } catch (err) {
+        document.getElementById('checkBalanceResult').innerHTML = `<span style="color: #ef4444;">❌ Xato: ${err.message}</span>`;
+      }
+    }
   </script>
 </body>
 </html>
