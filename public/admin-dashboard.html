@@ -521,6 +521,23 @@
           </div>
         </div>
 
+        <!-- Users Page -->
+        <div class="page" id="page-users">
+          <div class="section-title">👥 Foydalanuvchilar</div>
+          <div class="card">
+            <div style="margin-bottom: 16px;">
+              <label style="font-size: 13px; color: #64748b;">Filtrlash va Qidiruv:</label>
+              <div style="display: flex; gap: 12px; margin-top: 8px;">
+                <input type="text" id="userSearchInput" placeholder="Telegram ID, Username yoki API Key" style="flex: 1; padding: 10px; background: #070710; border: 1px solid #1e1e2e; border-radius: 8px; color: #e2e8f0; font-size: 14px;">
+                <button class="btn-small" onclick="loadUsersPage()">🔍 Qidiruv</button>
+              </div>
+            </div>
+            <div id="usersListContainer" style="max-height: 700px; overflow-y: auto;">
+              <p style="color: #94a3b8; text-align: center; padding: 20px;">Yuklanmoqda...</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Calculator Page -->
         <div class="page" id="page-calculator">
           <div class="section-title">🧮 Qo'shimcha Kalkulyator</div>
@@ -595,6 +612,8 @@
       // Load data when switching pages
       if (name === 'orders') {
         loadOrdersPage();
+      } else if (name === 'users') {
+        loadUsersPage();
       }
     }
 
@@ -926,6 +945,70 @@
       } catch (err) {
         document.getElementById('checkBalanceResult').innerHTML = `<span style="color: #ef4444;">❌ Xato: ${err.message}</span>`;
       }
+    }
+
+    async function loadUsersPage() {
+      try {
+        const searchQuery = document.getElementById('userSearchInput')?.value.trim() || '';
+        const url = `/api/admin/bot-users?limit=100`;
+        
+        const response = await fetch(url, {
+          headers: { 'X-Admin-Secret': SECRET }
+        });
+
+        if (!response.ok) throw new Error('Failed to load users');
+
+        const data = await response.json();
+        const users = data.data?.users || [];
+
+        if (users.length === 0) {
+          document.getElementById('usersListContainer').innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 20px;">Foydalanuvchilar topilmadi</p>';
+          return;
+        }
+
+        // Filter users if search query exists
+        let filteredUsers = users;
+        if (searchQuery) {
+          filteredUsers = users.filter(u => 
+            (u.telegram_id && u.telegram_id.toString().includes(searchQuery)) ||
+            (u.username && u.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            (u.api_key && u.api_key.includes(searchQuery))
+          );
+        }
+
+        displayUsersList(filteredUsers);
+      } catch (err) {
+        console.error('Error loading users:', err);
+        document.getElementById('usersListContainer').innerHTML = '<p style="color: #ef4444; text-align: center; padding: 20px;">Xato: ' + err.message + '</p>';
+      }
+    }
+
+    function displayUsersList(users) {
+      let html = '<table style="width: 100%; border-collapse: collapse;">';
+      html += '<thead><tr style="border-bottom: 2px solid #1e1e2e;">';
+      html += '<th style="text-align: left; padding: 12px; color: #f59e0b;">Telegram ID</th>';
+      html += '<th style="text-align: left; padding: 12px; color: #f59e0b;">Username</th>';
+      html += '<th style="text-align: right; padding: 12px; color: #f59e0b;">Balans (so\'m)</th>';
+      html += '<th style="text-align: right; padding: 12px; color: #f59e0b;">Sotib olgan ⭐</th>';
+      html += '<th style="text-align: left; padding: 12px; color: #f59e0b;">Qo\'shilgan</th>';
+      html += '</tr></thead><tbody>';
+
+      users.forEach((user, index) => {
+        const joinDate = new Date(user.createdAt).toLocaleDateString('uz-UZ');
+        const balance = user.balance_uzs || 0;
+        const starsBought = user.total_stars_bought || 0;
+
+        html += `<tr style="border-bottom: 1px solid #1e1e2e; ${index % 2 === 0 ? 'background: rgba(245, 158, 11, 0.02);' : ''}">`;
+        html += `<td style="padding: 12px; font-family: monospace; font-size: 12px;">${user.telegram_id || 'N/A'}</td>`;
+        html += `<td style="padding: 12px;">${user.username ? '@' + user.username : '—'}</td>`;
+        html += `<td style="padding: 12px; text-align: right; color: #22c55e; font-weight: 600;">${balance.toLocaleString('uz-UZ')}</td>`;
+        html += `<td style="padding: 12px; text-align: right; color: #fbbf24;">${starsBought}</td>`;
+        html += `<td style="padding: 12px; color: #94a3b8; font-size: 12px;">${joinDate}</td>`;
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('usersListContainer').innerHTML = html;
     }
   </script>
 </body>
