@@ -497,6 +497,18 @@
             <button class="btn-small" onclick="checkBalance()">🔍 Ko'rish</button>
             <div id="checkBalanceResult" style="margin-top: 12px; font-size: 13px;"></div>
           </div>
+
+          <div class="card">
+            <h3 style="margin-bottom: 16px; font-size: 16px;">🔴 Balansni Obunul</h3>
+            
+            <div class="form-group">
+              <label>Telegram ID yoki Username</label>
+              <input type="text" id="resetBalanceUser" placeholder="123456789 yoki @username">
+            </div>
+
+            <button class="btn-small" onclick="resetBalance()" style="background: linear-gradient(135deg, #dc2626, #991b1b);">🔴 Balansni Obunul</button>
+            <div id="resetBalanceResult" style="margin-top: 12px; font-size: 13px;"></div>
+          </div>
         </div>
 
         <!-- Orders Page -->
@@ -944,6 +956,53 @@
         }
       } catch (err) {
         document.getElementById('checkBalanceResult').innerHTML = `<span style="color: #ef4444;">❌ Xato: ${err.message}</span>`;
+      }
+    }
+
+    async function resetBalance() {
+      const user = document.getElementById('resetBalanceUser').value.trim();
+      
+      if (!user) {
+        document.getElementById('resetBalanceResult').innerHTML = '<span style="color: #ef4444;">❌ Telegram ID yoki Username kiriting</span>';
+        return;
+      }
+
+      try {
+        // First, get current balance
+        const getResponse = await fetch(`/api/bot/user/${user}/balance`, {
+          headers: { 'X-Service-Secret': 'starpay_tg_secret_2024' }
+        });
+
+        const getData = await getResponse.json();
+        if (!getData.success) {
+          document.getElementById('resetBalanceResult').innerHTML = `<span style="color: #ef4444;">❌ Foydalanuvchi topilmadi</span>`;
+          return;
+        }
+
+        const currentBalance = getData.data?.balance_uzs || 0;
+
+        // Deduct all balance
+        const response = await fetch('/api/admin/deduct', {
+          method: 'POST',
+          headers: {
+            'X-Admin-Secret': SECRET,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            [isNaN(user) ? 'username' : 'telegram_id']: user,
+            amount: currentBalance
+          })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          document.getElementById('resetBalanceResult').innerHTML = `<span style="color: #22c55e;">✅ Balans obunuldi!<br>Oldingi balans: ${currentBalance.toLocaleString()} so'm<br>Yangi balans: 0 so'm</span>`;
+          document.getElementById('resetBalanceUser').value = '';
+        } else {
+          document.getElementById('resetBalanceResult').innerHTML = `<span style="color: #ef4444;">❌ ${data.error}</span>`;
+        }
+      } catch (err) {
+        document.getElementById('resetBalanceResult').innerHTML = `<span style="color: #ef4444;">❌ Xato: ${err.message}</span>`;
       }
     }
 
