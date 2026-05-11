@@ -868,16 +868,25 @@
       }
 
       try {
+        // Determine if it's a username or telegram_id
+        const isUsername = isNaN(user) || user.startsWith('@');
+        const payload = {
+          amount: amount
+        };
+        
+        if (isUsername) {
+          payload.username = user.replace('@', '');
+        } else {
+          payload.telegram_id = user;
+        }
+
         const response = await fetch('/api/admin/topup', {
           method: 'POST',
           headers: {
             'X-Admin-Secret': SECRET,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            [isNaN(user) ? 'username' : 'telegram_id']: user,
-            amount: amount
-          })
+          body: JSON.stringify(payload)
         });
 
         const data = await response.json();
@@ -903,16 +912,25 @@
       }
 
       try {
+        // Determine if it's a username or telegram_id
+        const isUsername = isNaN(user) || user.startsWith('@');
+        const payload = {
+          amount: amount
+        };
+        
+        if (isUsername) {
+          payload.username = user.replace('@', '');
+        } else {
+          payload.telegram_id = user;
+        }
+
         const response = await fetch('/api/admin/deduct', {
           method: 'POST',
           headers: {
             'X-Admin-Secret': SECRET,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            [isNaN(user) ? 'username' : 'telegram_id']: user,
-            amount: amount
-          })
+          body: JSON.stringify(payload)
         });
 
         const data = await response.json();
@@ -981,6 +999,18 @@
 
         const currentBalance = getData.data?.balance_uzs || 0;
 
+        // Determine if it's a username or telegram_id
+        const isUsername = isNaN(user) || user.startsWith('@');
+        const payload = {
+          amount: currentBalance
+        };
+        
+        if (isUsername) {
+          payload.username = user.replace('@', '');
+        } else {
+          payload.telegram_id = user;
+        }
+
         // Deduct all balance
         const response = await fetch('/api/admin/deduct', {
           method: 'POST',
@@ -988,10 +1018,7 @@
             'X-Admin-Secret': SECRET,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            [isNaN(user) ? 'username' : 'telegram_id']: user,
-            amount: currentBalance
-          })
+          body: JSON.stringify(payload)
         });
 
         const data = await response.json();
