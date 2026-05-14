@@ -349,6 +349,7 @@
         <div class="nav-item" onclick="showPage('balance')">💳 Balans</div>
         <div class="nav-item" onclick="showPage('users')">👥 Foydalanuvchilar</div>
         <div class="nav-item" onclick="showPage('orders')">📦 Buyurtmalar</div>
+        <div class="nav-item" onclick="showPage('broadcast')">📢 Xabar Yuborish</div>
         <div class="nav-item" onclick="showPage('calculator')">🧮 Kalkulyator</div>
       </nav>
 
@@ -546,6 +547,43 @@
             </div>
             <div id="usersListContainer" style="max-height: 700px; overflow-y: auto;">
               <p style="color: #94a3b8; text-align: center; padding: 20px;">Yuklanmoqda...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Broadcast Page -->
+        <div class="page" id="page-broadcast">
+          <div class="section-title">📢 Xabar Yuborish</div>
+          <div class="card">
+            <h3 style="margin-bottom: 16px; font-size: 16px;">✉️ Barcha Foydalanuvchilarga Xabar</h3>
+            
+            <div class="form-group">
+              <label>Xabar matni (HTML qo'llab-quvvatlanadi)</label>
+              <textarea id="broadcastText" placeholder="Xabar yozing..." style="width: 100%; padding: 12px; background: #070710; border: 1px solid #1e1e2e; border-radius: 8px; color: #e2e8f0; font-size: 14px; min-height: 150px; font-family: monospace; outline: none; resize: vertical;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 16px; padding: 12px; background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px;">
+              <p style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;"><b>💡 Premyum Emoji Namunalari:</b></p>
+              <p style="font-size: 12px; color: #fbbf24; font-family: monospace;">
+                &lt;tg-emoji emoji-id="5368324170671202286"&gt;⭐&lt;/tg-emoji&gt; - Yulduz<br>
+                &lt;tg-emoji emoji-id="5368324170671202286"&gt;💎&lt;/tg-emoji&gt; - Almas<br>
+                &lt;tg-emoji emoji-id="5368324170671202286"&gt;🎁&lt;/tg-emoji&gt; - Sovg'a<br>
+                &lt;tg-emoji emoji-id="5368324170671202286"&gt;✅&lt;/tg-emoji&gt; - Tasdiqlash
+              </p>
+            </div>
+
+            <button class="btn-small" onclick="sendBroadcast()" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);">📢 Yuborish</button>
+            <div id="broadcastResult" style="margin-top: 12px; font-size: 13px;"></div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-bottom: 16px; font-size: 16px;">📋 Shablonlar</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <button class="btn-small" onclick="loadTemplate('welcome')" style="background: #1e1e2e; border: 1px solid #2d2d3e; color: #fbbf24;">Xush Kelibsiz</button>
+              <button class="btn-small" onclick="loadTemplate('update')" style="background: #1e1e2e; border: 1px solid #2d2d3e; color: #fbbf24;">Yangilanish</button>
+              <button class="btn-small" onclick="loadTemplate('promo')" style="background: #1e1e2e; border: 1px solid #2d2d3e; color: #fbbf24;">Aksiya</button>
+              <button class="btn-small" onclick="loadTemplate('maintenance')" style="background: #1e1e2e; border: 1px solid #2d2d3e; color: #fbbf24;">Texnik Xizmat</button>
             </div>
           </div>
         </div>
@@ -1099,6 +1137,57 @@
 
       html += '</tbody></table>';
       document.getElementById('usersListContainer').innerHTML = html;
+    }
+
+    async function sendBroadcast() {
+      const text = document.getElementById('broadcastText').value.trim();
+      
+      if (!text) {
+        document.getElementById('broadcastResult').innerHTML = '<span style="color: #ef4444;">❌ Xabar matni bo\'sh</span>';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin/broadcast', {
+          method: 'POST',
+          headers: {
+            'X-Admin-Secret': SECRET,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ text })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          document.getElementById('broadcastResult').innerHTML = `
+            <div style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 8px; padding: 12px;">
+              <span style="color: #22c55e; font-weight: 700;">✅ Xabar yuborildi!</span><br>
+              <span style="color: #94a3b8; font-size: 12px;">Yuborilgan: ${data.sent} ta</span><br>
+              <span style="color: #94a3b8; font-size: 12px;">Xato: ${data.failed} ta</span><br>
+              <span style="color: #94a3b8; font-size: 12px;">Jami: ${data.total} ta</span>
+            </div>
+          `;
+          document.getElementById('broadcastText').value = '';
+        } else {
+          document.getElementById('broadcastResult').innerHTML = `<span style="color: #ef4444;">❌ ${data.error}</span>`;
+        }
+      } catch (err) {
+        document.getElementById('broadcastResult').innerHTML = `<span style="color: #ef4444;">❌ Xato: ${err.message}</span>`;
+      }
+    }
+
+    function loadTemplate(type) {
+      const templates = {
+        welcome: `<b>🎉 Xush Kelibsiz StarPay'ga!</b>\n\n<tg-emoji emoji-id="5368324170671202286">⭐</tg-emoji> <b>Telegram Stars</b> sotib oling\n<tg-emoji emoji-id="5368324170671202286">💎</tg-emoji> <b>Premium</b> xususiyatlarini foydalaning\n<tg-emoji emoji-id="5368324170671202286">🎁</tg-emoji> <b>Sovg'a</b> yuboring\n\n<tg-emoji emoji-id="5368324170671202286">✅</tg-emoji> Tezkor va xavfsiz`,
+        
+        update: `<b>📢 Yangi Yangilanish!</b>\n\n<tg-emoji emoji-id="5368324170671202286">✨</tg-emoji> Yangi xususiyatlar qo'shildi\n<tg-emoji emoji-id="5368324170671202286">🚀</tg-emoji> Ishlash tezligi oshirildi\n<tg-emoji emoji-id="5368324170671202286">🐛</tg-emoji> Xatolar tuzatildi\n\n<tg-emoji emoji-id="5368324170671202286">👍</tg-emoji> Yangilanishni o'rnatish uchun qayta ishga tushiring`,
+        
+        promo: `<b>🎊 Maxsus Aksiya!</b>\n\n<tg-emoji emoji-id="5368324170671202286">⭐</tg-emoji> <b>50% chegirma</b> barcha paketlarga\n<tg-emoji emoji-id="5368324170671202286">🎁</tg-emoji> <b>Bonus sovg'a</b> har 100 yulduzga\n<tg-emoji emoji-id="5368324170671202286">💰</tg-emoji> <b>Cashback</b> 5% gacha\n\n<tg-emoji emoji-id="5368324170671202286">⏰</tg-emoji> Aksiya 24 soat davom etadi!`,
+        
+        maintenance: `<b>🔧 Texnik Xizmat</b>\n\n<tg-emoji emoji-id="5368324170671202286">⚠️</tg-emoji> Tizim texnik xizmatda\n<tg-emoji emoji-id="5368324170671202286">⏱️</tg-emoji> Taxminan 30 daqiqa davom etadi\n\n<tg-emoji emoji-id="5368324170671202286">✅</tg-emoji> Tez orada qayta ishlaydi\n<tg-emoji emoji-id="5368324170671202286">📞</tg-emoji> Savollar uchun: @support`
+      };
+
+      document.getElementById('broadcastText').value = templates[type] || '';
     }
   </script>
 </body>

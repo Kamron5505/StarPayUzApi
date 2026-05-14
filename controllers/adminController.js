@@ -288,6 +288,7 @@ const broadcast = async (req, res, next) => {
           chat_id: user.telegram_id,
           text,
           parse_mode: 'HTML',
+          allow_user_chats: true,
         }, { timeout: 5000 });
         
         sent++;
