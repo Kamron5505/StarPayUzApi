@@ -49,7 +49,6 @@ const createUser = async (req, res, next) => {
 // ── Top Up Balance ────────────────────────────────────────────────────────────
 
 const topUpValidation = [
-  body('username').notEmpty().withMessage('username is required'),
   body('amount').isInt({ min: 1 }).withMessage('amount must be a positive integer'),
 ];
 
@@ -202,7 +201,6 @@ const toggleUser = async (req, res, next) => {
 // ── Deduct Balance ────────────────────────────────────────────────────────────
 
 const deductValidation = [
-  body('username').notEmpty().withMessage('username or telegram_id is required'),
   body('amount').isInt({ min: 1 }).withMessage('amount must be a positive integer'),
 ];
 
