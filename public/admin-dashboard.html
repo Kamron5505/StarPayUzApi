@@ -891,7 +891,9 @@
 
         const data = await response.json();
         if (data.success) {
-          document.getElementById('addBalanceResult').innerHTML = `<span style="color: #22c55e;">✅ ${data.message}<br>Yangi balans: ${data.data?.balance_after?.toLocaleString() || '—'} so'm</span>`;
+          const newBalance = data.data?.balance_after || 0;
+          const formattedBalance = newBalance.toLocaleString('uz-UZ', { maximumFractionDigits: 0 });
+          document.getElementById('addBalanceResult').innerHTML = `<span style="color: #22c55e;">✅ ${data.message}<br>Yangi balans: ${formattedBalance} so'm</span>`;
           document.getElementById('addBalanceUser').value = '';
           document.getElementById('addBalanceAmount').value = '';
         } else {
@@ -935,7 +937,9 @@
 
         const data = await response.json();
         if (data.success) {
-          document.getElementById('deductBalanceResult').innerHTML = `<span style="color: #22c55e;">✅ ${data.message}<br>Yangi balans: ${data.data?.balance_after?.toLocaleString() || '—'} so'm</span>`;
+          const newBalance = data.data?.balance_after || 0;
+          const formattedBalance = newBalance.toLocaleString('uz-UZ', { maximumFractionDigits: 0 });
+          document.getElementById('deductBalanceResult').innerHTML = `<span style="color: #22c55e;">✅ ${data.message}<br>Yangi balans: ${formattedBalance} so'm</span>`;
           document.getElementById('deductBalanceUser').value = '';
           document.getElementById('deductBalanceAmount').value = '';
         } else {
