@@ -1140,6 +1140,7 @@
     }
 
     async function sendBroadcast() {
+      console.log('sendBroadcast called');
       const text = document.getElementById('broadcastText').value.trim();
       
       if (!text) {
@@ -1148,6 +1149,7 @@
       }
 
       try {
+        console.log('Sending broadcast with text:', text);
         const response = await fetch('/api/admin/broadcast', {
           method: 'POST',
           headers: {
@@ -1157,7 +1159,10 @@
           body: JSON.stringify({ text })
         });
 
+        console.log('Response status:', response.status);
         const data = await response.json();
+        console.log('Response data:', data);
+        
         if (data.success) {
           document.getElementById('broadcastResult').innerHTML = `
             <div style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 8px; padding: 12px;">
@@ -1172,6 +1177,7 @@
           document.getElementById('broadcastResult').innerHTML = `<span style="color: #ef4444;">❌ ${data.error}</span>`;
         }
       } catch (err) {
+        console.error('Error:', err);
         document.getElementById('broadcastResult').innerHTML = `<span style="color: #ef4444;">❌ Xato: ${err.message}</span>`;
       }
     }
